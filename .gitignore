@@ -1,0 +1,15 @@
+.idea/
+.vscode/
+
+target/
+build/
+out/
+
+*.class
+*.log
+*.tmp
+
+.mvn/wrapper/maven-wrapper.jar
+
+.DS_Store
+Thumbs.db

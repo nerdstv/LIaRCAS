@@ -1,0 +1,6 @@
+spring:
+  application:
+    name: log-ingestion-service
+
+server:
+  port: 8081

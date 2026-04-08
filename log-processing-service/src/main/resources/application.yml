@@ -1,0 +1,6 @@
+spring:
+  application:
+    name: log-processing-service
+
+server:
+  port: 8082

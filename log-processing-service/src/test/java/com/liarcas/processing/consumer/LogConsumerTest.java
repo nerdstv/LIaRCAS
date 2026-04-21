@@ -26,7 +26,7 @@ class LogConsumerTest {
     private LogConsumer logConsumer;
 
     @Test
-    void shouldMapKafkaMessageAndSaveDocument() {
+    void shouldMapKafkaMessageAndSaveDocumentWithRcaMetadata() {
         Instant timestamp = Instant.parse("2026-04-21T10:15:30Z");
         LogEvent message = new LogEvent(
                 "log-123",
@@ -35,6 +35,13 @@ class LogConsumerTest {
                 "Database timeout",
                 timestamp
         );
+        message.setComponent("db-client");
+        message.setEnvironment("prod");
+        message.setServiceVersion("1.4.2");
+        message.setInstanceId("payment-pod-7");
+        message.setTraceId("trace-abc-123");
+        message.setExceptionType("SQLTransientConnectionException");
+        message.setStackTraceHash("sth-9f8c2d");
 
         logConsumer.consume(message);
 
@@ -46,6 +53,13 @@ class LogConsumerTest {
         assertThat(savedDocument.getServiceName()).isEqualTo("payment-service");
         assertThat(savedDocument.getLevel()).isEqualTo("ERROR");
         assertThat(savedDocument.getMessage()).isEqualTo("Database timeout");
+        assertThat(savedDocument.getComponent()).isEqualTo("db-client");
+        assertThat(savedDocument.getEnvironment()).isEqualTo("prod");
+        assertThat(savedDocument.getServiceVersion()).isEqualTo("1.4.2");
+        assertThat(savedDocument.getInstanceId()).isEqualTo("payment-pod-7");
+        assertThat(savedDocument.getTraceId()).isEqualTo("trace-abc-123");
+        assertThat(savedDocument.getExceptionType()).isEqualTo("SQLTransientConnectionException");
+        assertThat(savedDocument.getStackTraceHash()).isEqualTo("sth-9f8c2d");
         assertThat(savedDocument.getTimestamp()).isEqualTo(timestamp);
     }
 }

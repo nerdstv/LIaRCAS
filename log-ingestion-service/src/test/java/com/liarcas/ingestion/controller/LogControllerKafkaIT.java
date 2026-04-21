@@ -67,8 +67,15 @@ class LogControllerKafkaIT {
 
         LogEvent request = new LogEvent();
         request.setServiceName("payment-service");
+        request.setComponent("db-client");
+        request.setEnvironment("prod");
+        request.setServiceVersion("1.4.2");
+        request.setInstanceId("payment-pod-7");
+        request.setTraceId("trace-abc-123");
         request.setLevel("ERROR");
         request.setMessage("Database timeout");
+        request.setExceptionType("SQLTransientConnectionException");
+        request.setStackTraceHash("sth-9f8c2d");
 
         LogEvent response = restTemplate.postForObject(
                 "http://localhost:" + port + "/logs",
@@ -82,6 +89,13 @@ class LogControllerKafkaIT {
         assertThat(response.getServiceName()).isEqualTo("payment-service");
         assertThat(response.getLevel()).isEqualTo("ERROR");
         assertThat(response.getMessage()).isEqualTo("Database timeout");
+        assertThat(response.getComponent()).isEqualTo("db-client");
+        assertThat(response.getEnvironment()).isEqualTo("prod");
+        assertThat(response.getServiceVersion()).isEqualTo("1.4.2");
+        assertThat(response.getInstanceId()).isEqualTo("payment-pod-7");
+        assertThat(response.getTraceId()).isEqualTo("trace-abc-123");
+        assertThat(response.getExceptionType()).isEqualTo("SQLTransientConnectionException");
+        assertThat(response.getStackTraceHash()).isEqualTo("sth-9f8c2d");
 
         await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> {
             ConsumerRecords<String, LogEvent> records = consumer.poll(Duration.ofMillis(500));
@@ -93,6 +107,13 @@ class LogControllerKafkaIT {
             assertThat(published.getServiceName()).isEqualTo("payment-service");
             assertThat(published.getLevel()).isEqualTo("ERROR");
             assertThat(published.getMessage()).isEqualTo("Database timeout");
+            assertThat(published.getComponent()).isEqualTo("db-client");
+            assertThat(published.getEnvironment()).isEqualTo("prod");
+            assertThat(published.getServiceVersion()).isEqualTo("1.4.2");
+            assertThat(published.getInstanceId()).isEqualTo("payment-pod-7");
+            assertThat(published.getTraceId()).isEqualTo("trace-abc-123");
+            assertThat(published.getExceptionType()).isEqualTo("SQLTransientConnectionException");
+            assertThat(published.getStackTraceHash()).isEqualTo("sth-9f8c2d");
         });
     }
 

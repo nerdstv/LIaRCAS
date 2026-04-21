@@ -10,6 +10,6 @@ spring:
       properties:
         spring.json.trusted.packages: com.liarcas.models
   elasticsearch:
-      uris: http://localhost:9200
+    uris: http://localhost:9200
 server:
   port: 8082

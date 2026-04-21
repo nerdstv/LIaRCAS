@@ -62,7 +62,7 @@ class LogConsumerKafkaElasticsearchIT {
     }
 
     @Test
-    void shouldConsumeKafkaMessageAndStoreItInElasticsearch() throws Exception {
+    void shouldConsumeKafkaMessageAndStoreItInElasticsearchWithRcaMetadata() throws Exception {
         LogEvent event = new LogEvent(
                 "log-123",
                 "payment-service",
@@ -70,6 +70,13 @@ class LogConsumerKafkaElasticsearchIT {
                 "Database timeout",
                 Instant.parse("2026-04-21T10:15:30Z")
         );
+        event.setComponent("db-client");
+        event.setEnvironment("prod");
+        event.setServiceVersion("1.4.2");
+        event.setInstanceId("payment-pod-7");
+        event.setTraceId("trace-abc-123");
+        event.setExceptionType("SQLTransientConnectionException");
+        event.setStackTraceHash("sth-9f8c2d");
 
         send(event);
 
@@ -81,6 +88,13 @@ class LogConsumerKafkaElasticsearchIT {
             assertThat(saved.get().getServiceName()).isEqualTo("payment-service");
             assertThat(saved.get().getLevel()).isEqualTo("ERROR");
             assertThat(saved.get().getMessage()).isEqualTo("Database timeout");
+            assertThat(saved.get().getComponent()).isEqualTo("db-client");
+            assertThat(saved.get().getEnvironment()).isEqualTo("prod");
+            assertThat(saved.get().getServiceVersion()).isEqualTo("1.4.2");
+            assertThat(saved.get().getInstanceId()).isEqualTo("payment-pod-7");
+            assertThat(saved.get().getTraceId()).isEqualTo("trace-abc-123");
+            assertThat(saved.get().getExceptionType()).isEqualTo("SQLTransientConnectionException");
+            assertThat(saved.get().getStackTraceHash()).isEqualTo("sth-9f8c2d");
             assertThat(saved.get().getTimestamp()).isEqualTo(Instant.parse("2026-04-21T10:15:30Z"));
         });
     }

@@ -9,6 +9,7 @@ import com.liarcas.processing.repository.LogEventRepository;
 
 @Component
 public class LogConsumer {
+
     private final LogEventRepository logEventRepository;
 
     public LogConsumer(LogEventRepository logEventRepository) {
@@ -16,14 +17,22 @@ public class LogConsumer {
     }
 
     @KafkaListener(topics = "raw-logs")
-    public void consume(LogEvent message) {   
+    public void consume(LogEvent message) {
         LogEventDocument document = new LogEventDocument(
-            message.getId(),
-            message.getServiceName(),
-            message.getLevel(),
-            message.getMessage(),
-            message.getTimestamp()
+                message.getId(),
+                message.getServiceName(),
+                message.getComponent(),
+                message.getEnvironment(),
+                message.getServiceVersion(),
+                message.getInstanceId(),
+                message.getTraceId(),
+                message.getLevel(),
+                message.getMessage(),
+                message.getExceptionType(),
+                message.getStackTraceHash(),
+                message.getTimestamp()
         );
+
         logEventRepository.save(document);
 
         System.out.println("Consumed and saved log event: " + document.getId());

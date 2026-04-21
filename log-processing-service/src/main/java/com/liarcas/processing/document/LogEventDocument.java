@@ -10,11 +10,39 @@ import org.springframework.data.elasticsearch.annotations.FieldType;
 
 @Document(indexName = "logs")
 public class LogEventDocument {
+
     @Id
     private String id;
+
+    @Field(type = FieldType.Keyword)
     private String serviceName;
+
+    @Field(type = FieldType.Keyword)
+    private String component;
+
+    @Field(type = FieldType.Keyword)
+    private String environment;
+
+    @Field(type = FieldType.Keyword)
+    private String serviceVersion;
+
+    @Field(type = FieldType.Keyword)
+    private String instanceId;
+
+    @Field(type = FieldType.Keyword)
+    private String traceId;
+
+    @Field(type = FieldType.Keyword)
     private String level;
+
+    @Field(type = FieldType.Text)
     private String message;
+
+    @Field(type = FieldType.Keyword)
+    private String exceptionType;
+
+    @Field(type = FieldType.Keyword)
+    private String stackTraceHash;
 
     @Field(type = FieldType.Date, format = DateFormat.epoch_millis)
     private Instant timestamp;
@@ -27,6 +55,34 @@ public class LogEventDocument {
         this.serviceName = serviceName;
         this.level = level;
         this.message = message;
+        this.timestamp = timestamp;
+    }
+
+    public LogEventDocument(
+            String id,
+            String serviceName,
+            String component,
+            String environment,
+            String serviceVersion,
+            String instanceId,
+            String traceId,
+            String level,
+            String message,
+            String exceptionType,
+            String stackTraceHash,
+            Instant timestamp
+    ) {
+        this.id = id;
+        this.serviceName = serviceName;
+        this.component = component;
+        this.environment = environment;
+        this.serviceVersion = serviceVersion;
+        this.instanceId = instanceId;
+        this.traceId = traceId;
+        this.level = level;
+        this.message = message;
+        this.exceptionType = exceptionType;
+        this.stackTraceHash = stackTraceHash;
         this.timestamp = timestamp;
     }
 
@@ -46,6 +102,46 @@ public class LogEventDocument {
         this.serviceName = serviceName;
     }
 
+    public String getComponent() {
+        return component;
+    }
+
+    public void setComponent(String component) {
+        this.component = component;
+    }
+
+    public String getEnvironment() {
+        return environment;
+    }
+
+    public void setEnvironment(String environment) {
+        this.environment = environment;
+    }
+
+    public String getServiceVersion() {
+        return serviceVersion;
+    }
+
+    public void setServiceVersion(String serviceVersion) {
+        this.serviceVersion = serviceVersion;
+    }
+
+    public String getInstanceId() {
+        return instanceId;
+    }
+
+    public void setInstanceId(String instanceId) {
+        this.instanceId = instanceId;
+    }
+
+    public String getTraceId() {
+        return traceId;
+    }
+
+    public void setTraceId(String traceId) {
+        this.traceId = traceId;
+    }
+
     public String getLevel() {
         return level;
     }
@@ -62,11 +158,45 @@ public class LogEventDocument {
         this.message = message;
     }
 
+    public String getExceptionType() {
+        return exceptionType;
+    }
+
+    public void setExceptionType(String exceptionType) {
+        this.exceptionType = exceptionType;
+    }
+
+    public String getStackTraceHash() {
+        return stackTraceHash;
+    }
+
+    public void setStackTraceHash(String stackTraceHash) {
+        this.stackTraceHash = stackTraceHash;
+    }
+
     public Instant getTimestamp() {
         return timestamp;
     }
 
     public void setTimestamp(Instant timestamp) {
         this.timestamp = timestamp;
+    }
+
+    @Override
+    public String toString() {
+        return "LogEventDocument{" +
+                "id='" + id + '\'' +
+                ", serviceName='" + serviceName + '\'' +
+                ", component='" + component + '\'' +
+                ", environment='" + environment + '\'' +
+                ", serviceVersion='" + serviceVersion + '\'' +
+                ", instanceId='" + instanceId + '\'' +
+                ", traceId='" + traceId + '\'' +
+                ", level='" + level + '\'' +
+                ", message='" + message + '\'' +
+                ", exceptionType='" + exceptionType + '\'' +
+                ", stackTraceHash='" + stackTraceHash + '\'' +
+                ", timestamp=" + timestamp +
+                '}';
     }
 }

@@ -6,8 +6,15 @@ public class LogEvent {
 
     private String id;
     private String serviceName;
+    private String component;
+    private String environment;
+    private String serviceVersion;
+    private String instanceId;
+    private String traceId;
     private String level;
     private String message;
+    private String exceptionType;
+    private String stackTraceHash;
     private Instant timestamp;
 
     public LogEvent() {
@@ -37,6 +44,46 @@ public class LogEvent {
         this.serviceName = serviceName;
     }
 
+    public String getComponent() {
+        return component;
+    }
+
+    public void setComponent(String component) {
+        this.component = component;
+    }
+
+    public String getEnvironment() {
+        return environment;
+    }
+
+    public void setEnvironment(String environment) {
+        this.environment = environment;
+    }
+
+    public String getServiceVersion() {
+        return serviceVersion;
+    }
+
+    public void setServiceVersion(String serviceVersion) {
+        this.serviceVersion = serviceVersion;
+    }
+
+    public String getInstanceId() {
+        return instanceId;
+    }
+
+    public void setInstanceId(String instanceId) {
+        this.instanceId = instanceId;
+    }
+
+    public String getTraceId() {
+        return traceId;
+    }
+
+    public void setTraceId(String traceId) {
+        this.traceId = traceId;
+    }
+
     public String getLevel() {
         return level;
     }
@@ -53,6 +100,22 @@ public class LogEvent {
         this.message = message;
     }
 
+    public String getExceptionType() {
+        return exceptionType;
+    }
+
+    public void setExceptionType(String exceptionType) {
+        this.exceptionType = exceptionType;
+    }
+
+    public String getStackTraceHash() {
+        return stackTraceHash;
+    }
+
+    public void setStackTraceHash(String stackTraceHash) {
+        this.stackTraceHash = stackTraceHash;
+    }
+
     public Instant getTimestamp() {
         return timestamp;
     }
@@ -66,8 +129,15 @@ public class LogEvent {
         return "LogEvent{" +
                 "id='" + id + '\'' +
                 ", serviceName='" + serviceName + '\'' +
+                ", component='" + component + '\'' +
+                ", environment='" + environment + '\'' +
+                ", serviceVersion='" + serviceVersion + '\'' +
+                ", instanceId='" + instanceId + '\'' +
+                ", traceId='" + traceId + '\'' +
                 ", level='" + level + '\'' +
                 ", message='" + message + '\'' +
+                ", exceptionType='" + exceptionType + '\'' +
+                ", stackTraceHash='" + stackTraceHash + '\'' +
                 ", timestamp=" + timestamp +
                 '}';
     }

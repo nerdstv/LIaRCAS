@@ -9,6 +9,12 @@ import com.liarcas.processing.repository.LogEventRepository;
 
 @Component
 public class LogConsumer {
+    private final LogEventRepository logEventRepository;
+
+    public LogConsumer(LogEventRepository logEventRepository) {
+        this.logEventRepository = logEventRepository;
+    }
+
     @KafkaListener(topics = "raw-logs")
     public void consume(LogEvent message) {   
         LogEventDocument document = new LogEventDocument(

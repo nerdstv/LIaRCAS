@@ -3,8 +3,10 @@ package com.liarcas.processing.document;
 import java.time.Instant;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.elasticsearch.annotations.DateFormat;
 import org.springframework.data.elasticsearch.annotations.Document;
-
+import org.springframework.data.elasticsearch.annotations.Field;
+import org.springframework.data.elasticsearch.annotations.FieldType;
 
 @Document(indexName = "logs")
 public class LogEventDocument {
@@ -13,11 +15,13 @@ public class LogEventDocument {
     private String serviceName;
     private String level;
     private String message;
+
+    @Field(type = FieldType.Date, format = DateFormat.epoch_millis)
     private Instant timestamp;
-    
+
     public LogEventDocument() {
     }
-    
+
     public LogEventDocument(String id, String serviceName, String level, String message, Instant timestamp) {
         this.id = id;
         this.serviceName = serviceName;

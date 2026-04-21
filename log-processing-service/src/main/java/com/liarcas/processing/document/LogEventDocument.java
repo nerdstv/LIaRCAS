@@ -1,22 +1,24 @@
 package com.liarcas.processing.document;
 
+import java.time.Instant;
+
 import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.elasticsearch.annotations.Document;
 
 
-@Document(collection = "logs")
+@Document(indexName = "logs")
 public class LogEventDocument {
     @Id
     private String id;
     private String serviceName;
     private String level;
     private String message;
-    private String timestamp;
+    private Instant timestamp;
     
     public LogEventDocument() {
     }
     
-    public LogEventDocument(String id, String serviceName, String level, String message, String timestamp) {
+    public LogEventDocument(String id, String serviceName, String level, String message, Instant timestamp) {
         this.id = id;
         this.serviceName = serviceName;
         this.level = level;
@@ -56,11 +58,11 @@ public class LogEventDocument {
         this.message = message;
     }
 
-    public String getTimestamp() {
+    public Instant getTimestamp() {
         return timestamp;
     }
 
-    public void setTimestamp(String timestamp) {
+    public void setTimestamp(Instant timestamp) {
         this.timestamp = timestamp;
     }
 }

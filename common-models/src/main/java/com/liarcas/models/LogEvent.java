@@ -5,6 +5,7 @@ import java.time.Instant;
 public class LogEvent {
 
     private String id;
+    private String tenantId;
     private String serviceName;
     private String component;
     private String environment;
@@ -27,6 +28,44 @@ public class LogEvent {
         this.message = message;
         this.timestamp = timestamp;
     }
+    public LogEvent(
+            String id,
+            String tenantId,
+            String serviceName,
+            String component,
+            String environment,
+            String serviceVersion,
+            String instanceId,
+            String traceId,
+            String level,
+            String message,
+            String exceptionType,
+            String stackTraceHash,
+            Instant timestamp
+    ) {
+        this.id = id;
+        this.tenantId = tenantId;
+        this.serviceName = serviceName;
+        this.component = component;
+        this.environment = environment;
+        this.serviceVersion = serviceVersion;
+        this.instanceId = instanceId;
+        this.traceId = traceId;
+        this.level = level;
+        this.message = message;
+        this.exceptionType = exceptionType;
+        this.stackTraceHash = stackTraceHash;
+        this.timestamp = timestamp;
+    }
+
+    public String getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(String tenantId) {
+        this.tenantId = tenantId;
+    }
+
 
     public String getId() {
         return id;
@@ -128,6 +167,7 @@ public class LogEvent {
     public String toString() {
         return "LogEvent{" +
                 "id='" + id + '\'' +
+                ", tenantId='" + tenantId + '\'' +
                 ", serviceName='" + serviceName + '\'' +
                 ", component='" + component + '\'' +
                 ", environment='" + environment + '\'' +

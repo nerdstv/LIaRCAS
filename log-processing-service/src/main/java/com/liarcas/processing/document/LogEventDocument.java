@@ -15,6 +15,9 @@ public class LogEventDocument {
     private String id;
 
     @Field(type = FieldType.Keyword)
+    private String tenantId;
+
+    @Field(type = FieldType.Keyword)
     private String serviceName;
 
     @Field(type = FieldType.Keyword)
@@ -84,6 +87,44 @@ public class LogEventDocument {
         this.exceptionType = exceptionType;
         this.stackTraceHash = stackTraceHash;
         this.timestamp = timestamp;
+    }
+
+    public LogEventDocument(
+            String id,
+            String tenantId,
+            String serviceName,
+            String component,
+            String environment,
+            String serviceVersion,
+            String instanceId,
+            String traceId,
+            String level,
+            String message,
+            String exceptionType,
+            String stackTraceHash,
+            Instant timestamp
+    ) {
+        this.id = id;
+        this.tenantId = tenantId;
+        this.serviceName = serviceName;
+        this.component = component;
+        this.environment = environment;
+        this.serviceVersion = serviceVersion;
+        this.instanceId = instanceId;
+        this.traceId = traceId;
+        this.level = level;
+        this.message = message;
+        this.exceptionType = exceptionType;
+        this.stackTraceHash = stackTraceHash;
+        this.timestamp = timestamp;
+    }
+
+    public String getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(String tenantId) {
+        this.tenantId = tenantId;
     }
 
     public String getId() {

@@ -85,6 +85,7 @@ Write-Host "Ingestion health:"
 $ingestionHealth | Format-List
 
 $body = @{
+    tenantId       = "tenant-001"
     serviceName    = "payment-service"
     component      = "db-client"
     environment    = "prod"
@@ -103,6 +104,10 @@ $response = Invoke-RestMethod -Method Post -Uri http://localhost:8081/logs -Cont
 Write-Host "Response from ingestion:"
 $response | Format-List
 
+if ($response.tenantId -ne "tenant-001") {
+    throw "Ingestion response did not preserve tenantId"
+}
+
 Write-Host "Waiting for Elasticsearch persistence..."
 Start-Sleep -Seconds 4
 
@@ -114,6 +119,7 @@ if (-not $stored.found) {
 
 $source = $stored._source
 $expected = @{
+    tenantId       = "tenant-001"
     serviceName    = "payment-service"
     component      = "db-client"
     environment    = "prod"

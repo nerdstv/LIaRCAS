@@ -26,7 +26,7 @@ class LogConsumerTest {
     private LogConsumer logConsumer;
 
     @Test
-    void shouldMapKafkaMessageAndSaveDocumentWithRcaMetadata() {
+    void shouldMapKafkaMessageAndSaveDocumentWithTenantAndRcaMetadata() {
         Instant timestamp = Instant.parse("2026-04-21T10:15:30Z");
         LogEvent message = new LogEvent(
                 "log-123",
@@ -35,6 +35,7 @@ class LogConsumerTest {
                 "Database timeout",
                 timestamp
         );
+        message.setTenantId("tenant-001");
         message.setComponent("db-client");
         message.setEnvironment("prod");
         message.setServiceVersion("1.4.2");
@@ -50,6 +51,7 @@ class LogConsumerTest {
 
         LogEventDocument savedDocument = captor.getValue();
         assertThat(savedDocument.getId()).isEqualTo("log-123");
+        assertThat(savedDocument.getTenantId()).isEqualTo("tenant-001");
         assertThat(savedDocument.getServiceName()).isEqualTo("payment-service");
         assertThat(savedDocument.getLevel()).isEqualTo("ERROR");
         assertThat(savedDocument.getMessage()).isEqualTo("Database timeout");

@@ -66,6 +66,7 @@ class LogControllerKafkaIT {
         consumer.subscribe(List.of("raw-logs"));
 
         LogEvent request = new LogEvent();
+        request.setTenantId("tenant-001");
         request.setServiceName("payment-service");
         request.setComponent("db-client");
         request.setEnvironment("prod");
@@ -85,6 +86,7 @@ class LogControllerKafkaIT {
 
         assertThat(response).isNotNull();
         assertThat(response.getId()).isNotBlank();
+        assertThat(response.getTenantId()).isEqualTo("tenant-001");
         assertThat(response.getTimestamp()).isNotNull();
         assertThat(response.getServiceName()).isEqualTo("payment-service");
         assertThat(response.getLevel()).isEqualTo("ERROR");
@@ -103,6 +105,7 @@ class LogControllerKafkaIT {
 
             LogEvent published = records.iterator().next().value();
             assertThat(published.getId()).isEqualTo(response.getId());
+            assertThat(published.getTenantId()).isEqualTo("tenant-001");
             assertThat(published.getTimestamp()).isEqualTo(response.getTimestamp());
             assertThat(published.getServiceName()).isEqualTo("payment-service");
             assertThat(published.getLevel()).isEqualTo("ERROR");

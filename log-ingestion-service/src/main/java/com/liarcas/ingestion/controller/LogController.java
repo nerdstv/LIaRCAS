@@ -3,10 +3,12 @@ package com.liarcas.ingestion.controller;
 import java.time.Instant;
 import java.util.UUID;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.liarcas.models.LogEvent;
 
@@ -22,6 +24,9 @@ public class LogController {
     @PostMapping("/logs")
     public LogEvent ingestLog(@RequestBody LogEvent logEvent) {
         
+        if (logEvent.getTenantId() == null || logEvent.getTenantId().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "tenantId is required");
+        }
         if(logEvent.getId() == null){
             logEvent.setId(UUID.randomUUID().toString());
         }

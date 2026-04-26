@@ -62,7 +62,7 @@ class LogConsumerKafkaElasticsearchIT {
     }
 
     @Test
-    void shouldConsumeKafkaMessageAndStoreItInElasticsearchWithRcaMetadata() throws Exception {
+    void shouldConsumeKafkaMessageAndStoreItInElasticsearchWithTenantAndRcaMetadata() throws Exception {
         LogEvent event = new LogEvent(
                 "log-123",
                 "payment-service",
@@ -70,6 +70,7 @@ class LogConsumerKafkaElasticsearchIT {
                 "Database timeout",
                 Instant.parse("2026-04-21T10:15:30Z")
         );
+        event.setTenantId("tenant-001");
         event.setComponent("db-client");
         event.setEnvironment("prod");
         event.setServiceVersion("1.4.2");
@@ -85,6 +86,7 @@ class LogConsumerKafkaElasticsearchIT {
 
             assertThat(saved).isPresent();
             assertThat(saved.get().getId()).isEqualTo("log-123");
+            assertThat(saved.get().getTenantId()).isEqualTo("tenant-001");
             assertThat(saved.get().getServiceName()).isEqualTo("payment-service");
             assertThat(saved.get().getLevel()).isEqualTo("ERROR");
             assertThat(saved.get().getMessage()).isEqualTo("Database timeout");

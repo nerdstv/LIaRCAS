@@ -20,6 +20,7 @@ public class LogConsumer {
     public void consume(LogEvent message) {
         LogEventDocument document = new LogEventDocument(
                 message.getId(),
+                message.getTenantId(),
                 message.getServiceName(),
                 message.getComponent(),
                 message.getEnvironment(),

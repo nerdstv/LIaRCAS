@@ -1,14 +1,10 @@
-param(
-    [switch]$SkipBuild
-)
-
 $ErrorActionPreference = "Stop"
 Set-Location $PSScriptRoot
 
 function Wait-Http {
     param(
         [string]$Url,
-        [int]$TimeoutSeconds = 90
+        [int]$TimeoutSeconds = 120
     )
 
     $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
@@ -25,58 +21,12 @@ function Wait-Http {
     throw "Timed out waiting for $Url"
 }
 
-function Start-ServiceWindow {
-    param(
-        [string]$JarPath
-    )
-
-    Start-Process pwsh -ArgumentList @(
-        "-NoExit",
-        "-Command",
-        "Set-Location '$PSScriptRoot'; java -jar '$JarPath'"
-    ) | Out-Null
-}
-
 $authHeaderName = if ($env:LIARCAS_AUTH_HEADER_NAME) { $env:LIARCAS_AUTH_HEADER_NAME } else { "X-API-Key" }
 $apiKey = if ($env:LIARCAS_API_KEY) { $env:LIARCAS_API_KEY } else { "local-dev-api-key" }
 $expectedTenantId = if ($env:LIARCAS_TENANT_ID) { $env:LIARCAS_TENANT_ID } else { "tenant-001" }
 
-Write-Host "Starting Kafka and Elasticsearch..."
-docker compose up -d
-
-Write-Host "Ensuring Kafka topic exists..."
-docker compose exec -T kafka kafka-topics --create --if-not-exists --topic raw-logs --bootstrap-server kafka:29092 --partitions 1 --replication-factor 1
-
-if (-not $SkipBuild) {
-    Write-Host "Building ingestion and processing jars..."
-    .\mvnw.cmd -pl log-ingestion-service,log-processing-service -am package -DskipTests
-}
-
-$processingUp = $false
-try {
-    Invoke-RestMethod http://localhost:8082/health -TimeoutSec 3 | Out-Null
-    $processingUp = $true
-}
-catch {
-}
-
-if (-not $processingUp) {
-    Write-Host "Starting log-processing-service..."
-    Start-ServiceWindow ".\log-processing-service\target\log-processing-service-0.0.1-SNAPSHOT.jar"
-}
-
-$ingestionUp = $false
-try {
-    Invoke-RestMethod http://localhost:8081/health -TimeoutSec 3 | Out-Null
-    $ingestionUp = $true
-}
-catch {
-}
-
-if (-not $ingestionUp) {
-    Write-Host "Starting log-ingestion-service..."
-    Start-ServiceWindow ".\log-ingestion-service\target\log-ingestion-service-0.0.1-SNAPSHOT.jar"
-}
+Write-Host "Starting full stack with Docker Compose..."
+docker compose up -d --build
 
 Write-Host "Waiting for services..."
 $processingHealth = Wait-Http "http://localhost:8082/health"
@@ -157,4 +107,3 @@ Write-Host "E2E manual test passed." -ForegroundColor Green
 Write-Host "Stored Elasticsearch document:"
 $source | ConvertTo-Json -Depth 10
 # .\runThis.ps1
-# .\runThis.ps1 -SkipBuild

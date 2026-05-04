@@ -2,7 +2,7 @@ spring:
   application:
     name: log-ingestion-service
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
@@ -14,6 +14,6 @@ liarcas:
       - client-id: ${LIARCAS_CLIENT_ID:local-dev-client}
         api-key: ${LIARCAS_API_KEY:local-dev-api-key}
         tenant-id: ${LIARCAS_TENANT_ID:tenant-001}
-        
+
 server:
-  port: 8081
+  port: ${SERVER_PORT:8081}

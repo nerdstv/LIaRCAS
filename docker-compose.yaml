@@ -1,4 +1,5 @@
-version: '3.8'
+version: "3.8"
+
 services:
   zookeeper:
     image: confluentinc/cp-zookeeper:7.6.0
@@ -25,8 +26,46 @@ services:
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
     environment:
-      - discovery.type=single-node
-      - xpack.security.enabled=false
-      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: -Xms512m -Xmx512m
     ports:
       - "9200:9200"
+
+  kafka-init:
+    image: confluentinc/cp-kafka:7.6.0
+    depends_on:
+      - kafka
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        cub kafka-ready -b kafka:29092 1 60 && \
+        kafka-topics --create --if-not-exists --topic raw-logs --bootstrap-server kafka:29092 --partitions 1 --replication-factor 1
+
+  log-ingestion-service:
+    build:
+      context: .
+      dockerfile: log-ingestion-service/Dockerfile
+    depends_on:
+      - kafka-init
+    ports:
+      - "8081:8081"
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      LIARCAS_AUTH_HEADER_NAME: X-API-Key
+      LIARCAS_CLIENT_ID: local-dev-client
+      LIARCAS_API_KEY: local-dev-api-key
+      LIARCAS_TENANT_ID: tenant-001
+
+  log-processing-service:
+    build:
+      context: .
+      dockerfile: log-processing-service/Dockerfile
+    depends_on:
+      - kafka-init
+      - elasticsearch
+    ports:
+      - "8082:8082"
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      ELASTICSEARCH_URIS: http://elasticsearch:9200

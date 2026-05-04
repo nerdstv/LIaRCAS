@@ -14,16 +14,29 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.liarcas.ingestion.security.SecurityConfig;
 import com.liarcas.models.LogEvent;
 
 @WebMvcTest(LogController.class)
+@Import(SecurityConfig.class)
+@TestPropertySource(properties = {
+        "liarcas.auth.header-name=X-API-Key",
+        "liarcas.auth.clients[0].client-id=local-dev-client",
+        "liarcas.auth.clients[0].api-key=local-dev-api-key",
+        "liarcas.auth.clients[0].tenant-id=tenant-001"
+})
 class LogControllerTest {
+
+    private static final String API_KEY_HEADER = "X-API-Key";
+    private static final String API_KEY = "local-dev-api-key";
 
     @Autowired
     private MockMvc mockMvc;
@@ -35,10 +48,10 @@ class LogControllerTest {
     private KafkaTemplate<String, LogEvent> kafkaTemplate;
 
     @Test
-    void shouldGenerateIdAndTimestampAndSendToKafka() throws Exception {
+    void shouldGenerateIdAndTimestampAndResolveTenantFromApiKey() throws Exception {
         String payload = """
                 {
-                  "tenantId": "tenant-001",
+                  "tenantId": "spoofed-tenant",
                   "serviceName": "payment-service",
                   "level": "ERROR",
                   "message": "Database timeout"
@@ -46,6 +59,7 @@ class LogControllerTest {
                 """;
 
         MvcResult result = mockMvc.perform(post("/logs")
+                        .header(API_KEY_HEADER, API_KEY)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload))
                 .andExpect(status().isOk())
@@ -93,7 +107,7 @@ class LogControllerTest {
     }
 
     @Test
-    void shouldKeepProvidedIdTimestampTenantIdAndRcaMetadata() throws Exception {
+    void shouldKeepProvidedIdTimestampAndOverrideSpoofedTenantId() throws Exception {
         LogEvent request = new LogEvent(
                 "log-123",
                 "payment-service",
@@ -101,7 +115,7 @@ class LogControllerTest {
                 "Database timeout",
                 Instant.parse("2026-04-21T10:15:30Z")
         );
-        request.setTenantId("tenant-001");
+        request.setTenantId("spoofed-tenant");
         request.setComponent("db-client");
         request.setEnvironment("prod");
         request.setServiceVersion("1.4.2");
@@ -111,6 +125,7 @@ class LogControllerTest {
         request.setStackTraceHash("sth-9f8c2d");
 
         MvcResult result = mockMvc.perform(post("/logs")
+                        .header(API_KEY_HEADER, API_KEY)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -152,7 +167,7 @@ class LogControllerTest {
     }
 
     @Test
-    void shouldRejectMissingTenantId() throws Exception {
+    void shouldRejectMissingApiKey() throws Exception {
         String payload = """
                 {
                   "serviceName": "payment-service",
@@ -164,7 +179,26 @@ class LogControllerTest {
         mockMvc.perform(post("/logs")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isUnauthorized());
+
+        verifyNoInteractions(kafkaTemplate);
+    }
+
+    @Test
+    void shouldRejectInvalidApiKey() throws Exception {
+        String payload = """
+                {
+                  "serviceName": "payment-service",
+                  "level": "ERROR",
+                  "message": "Database timeout"
+                }
+                """;
+
+        mockMvc.perform(post("/logs")
+                        .header(API_KEY_HEADER, "wrong-key")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isUnauthorized());
 
         verifyNoInteractions(kafkaTemplate);
     }

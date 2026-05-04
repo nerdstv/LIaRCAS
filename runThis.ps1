@@ -37,6 +37,10 @@ function Start-ServiceWindow {
     ) | Out-Null
 }
 
+$authHeaderName = if ($env:LIARCAS_AUTH_HEADER_NAME) { $env:LIARCAS_AUTH_HEADER_NAME } else { "X-API-Key" }
+$apiKey = if ($env:LIARCAS_API_KEY) { $env:LIARCAS_API_KEY } else { "local-dev-api-key" }
+$expectedTenantId = if ($env:LIARCAS_TENANT_ID) { $env:LIARCAS_TENANT_ID } else { "tenant-001" }
+
 Write-Host "Starting Kafka and Elasticsearch..."
 docker compose up -d
 
@@ -84,8 +88,10 @@ $processingHealth | Format-List
 Write-Host "Ingestion health:"
 $ingestionHealth | Format-List
 
+$headers = @{}
+$headers[$authHeaderName] = $apiKey
+
 $body = @{
-    tenantId       = "tenant-001"
     serviceName    = "payment-service"
     component      = "db-client"
     environment    = "prod"
@@ -99,13 +105,13 @@ $body = @{
 } | ConvertTo-Json
 
 Write-Host "Posting test log..."
-$response = Invoke-RestMethod -Method Post -Uri http://localhost:8081/logs -ContentType "application/json" -Body $body
+$response = Invoke-RestMethod -Method Post -Uri http://localhost:8081/logs -Headers $headers -ContentType "application/json" -Body $body
 
 Write-Host "Response from ingestion:"
 $response | Format-List
 
-if ($response.tenantId -ne "tenant-001") {
-    throw "Ingestion response did not preserve tenantId"
+if ($response.tenantId -ne $expectedTenantId) {
+    throw "Ingestion response did not resolve tenantId from API key"
 }
 
 Write-Host "Waiting for Elasticsearch persistence..."
@@ -119,7 +125,7 @@ if (-not $stored.found) {
 
 $source = $stored._source
 $expected = @{
-    tenantId       = "tenant-001"
+    tenantId       = $expectedTenantId
     serviceName    = "payment-service"
     component      = "db-client"
     environment    = "prod"

@@ -21,6 +21,11 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Bean;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.config.TopicBuilder;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -35,6 +40,8 @@ import com.liarcas.models.LogEvent;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Testcontainers
 class LogControllerKafkaIT {
+
+    private static final String API_KEY = "local-dev-api-key";
 
     @Container
     static KafkaContainer kafka =
@@ -51,6 +58,10 @@ class LogControllerKafkaIT {
     @DynamicPropertySource
     static void registerKafkaProperties(DynamicPropertyRegistry registry) {
         registry.add("spring.kafka.bootstrap-servers", kafka::getBootstrapServers);
+        registry.add("liarcas.auth.header-name", () -> "X-API-Key");
+        registry.add("liarcas.auth.clients[0].client-id", () -> "local-dev-client");
+        registry.add("liarcas.auth.clients[0].api-key", () -> API_KEY);
+        registry.add("liarcas.auth.clients[0].tenant-id", () -> "tenant-001");
     }
 
     @AfterEach
@@ -61,12 +72,12 @@ class LogControllerKafkaIT {
     }
 
     @Test
-    void shouldPublishReceivedLogToKafka() {
+    void shouldPublishReceivedLogToKafkaUsingResolvedTenant() {
         consumer = createConsumer();
         consumer.subscribe(List.of("raw-logs"));
 
         LogEvent request = new LogEvent();
-        request.setTenantId("tenant-001");
+        request.setTenantId("spoofed-tenant");
         request.setServiceName("payment-service");
         request.setComponent("db-client");
         request.setEnvironment("prod");
@@ -78,12 +89,19 @@ class LogControllerKafkaIT {
         request.setExceptionType("SQLTransientConnectionException");
         request.setStackTraceHash("sth-9f8c2d");
 
-        LogEvent response = restTemplate.postForObject(
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("X-API-Key", API_KEY);
+
+        ResponseEntity<LogEvent> responseEntity = restTemplate.postForEntity(
                 "http://localhost:" + port + "/logs",
-                request,
+                new HttpEntity<>(request, headers),
                 LogEvent.class
         );
 
+        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        LogEvent response = responseEntity.getBody();
         assertThat(response).isNotNull();
         assertThat(response.getId()).isNotBlank();
         assertThat(response.getTenantId()).isEqualTo("tenant-001");

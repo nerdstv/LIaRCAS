@@ -2,17 +2,22 @@ package com.liarcas.models;
 
 import java.time.Instant;
 
+import jakarta.validation.constraints.NotBlank;
+
 public class LogEvent {
 
     private String id;
     private String tenantId;
+    @NotBlank(message = "serviceName is required")
     private String serviceName;
     private String component;
     private String environment;
     private String serviceVersion;
     private String instanceId;
     private String traceId;
+    @NotBlank(message = "level is required")
     private String level;
+    @NotBlank(message = "message is required")
     private String message;
     private String exceptionType;
     private String stackTraceHash;

@@ -2,6 +2,7 @@ package com.liarcas.ingestion.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -9,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.time.Instant;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,6 +48,11 @@ class LogControllerTest {
 
     @MockBean
     private KafkaTemplate<String, LogEvent> kafkaTemplate;
+
+    @BeforeEach
+    void clearKafkaTemplateInteractions() {
+        clearInvocations(kafkaTemplate);
+    }
 
     @Test
     void shouldGenerateIdAndTimestampAndResolveTenantFromApiKey() throws Exception {
@@ -199,6 +206,61 @@ class LogControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload))
                 .andExpect(status().isUnauthorized());
+
+        verifyNoInteractions(kafkaTemplate);
+    }
+
+    @Test
+    void shouldRejectMissingServiceName() throws Exception {
+        String payload = """
+                {
+                  "level": "ERROR",
+                  "message": "Database timeout"
+                }
+                """;
+
+        mockMvc.perform(post("/logs")
+                        .header(API_KEY_HEADER, API_KEY)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(kafkaTemplate);
+    }
+
+    @Test
+    void shouldRejectBlankLevel() throws Exception {
+        String payload = """
+                {
+                  "serviceName": "payment-service",
+                  "level": "   ",
+                  "message": "Database timeout"
+                }
+                """;
+
+        mockMvc.perform(post("/logs")
+                        .header(API_KEY_HEADER, API_KEY)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(kafkaTemplate);
+    }
+
+    @Test
+    void shouldRejectMissingMessage() throws Exception {
+        String payload = """
+                {
+                  "serviceName": "payment-service",
+                  "level": "ERROR"
+                }
+                """;
+
+        mockMvc.perform(post("/logs")
+                        .header(API_KEY_HEADER, API_KEY)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isBadRequest());
 
         verifyNoInteractions(kafkaTemplate);
     }

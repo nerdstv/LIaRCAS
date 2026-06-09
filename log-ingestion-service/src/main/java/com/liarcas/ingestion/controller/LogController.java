@@ -3,6 +3,8 @@ package com.liarcas.ingestion.controller;
 import java.time.Instant;
 import java.util.UUID;
 
+import jakarta.validation.Valid;
+
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -22,7 +24,7 @@ public class LogController {
     }
 
     @PostMapping("/logs")
-    public LogEvent ingestLog(@RequestBody LogEvent logEvent, Authentication authentication) {
+    public LogEvent ingestLog(@Valid @RequestBody LogEvent logEvent, Authentication authentication) {
         if (authentication == null || !(authentication.getPrincipal() instanceof TenantPrincipal tenantPrincipal)) {
             throw new IllegalStateException("Authenticated tenant principal is required");
         }

@@ -3,12 +3,12 @@ WORKDIR /workspace
 
 COPY pom.xml .
 COPY .mvn .mvn
-COPY mvnw mvnw
-COPY mvnw.cmd mvnw.cmd
 COPY common-models common-models
 COPY log-ingestion-service log-ingestion-service
+COPY log-processing-service log-processing-service
+COPY root-cause-service root-cause-service
 
-RUN chmod +x mvnw && ./mvnw -pl log-ingestion-service -am clean package -DskipTests
+RUN mvn -pl log-ingestion-service -am clean package -DskipTests
 
 FROM eclipse-temurin:21-jre
 WORKDIR /app

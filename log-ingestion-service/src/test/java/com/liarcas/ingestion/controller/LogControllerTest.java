@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.hamcrest.Matchers.hasItem;
 
 import java.time.Instant;
 
@@ -363,8 +364,7 @@ class LogControllerTest {
                 .andExpect(jsonPath("$.status").value(400))
                 .andExpect(jsonPath("$.detail").value("One or more request fields are invalid."))
                 .andExpect(jsonPath("$.instance").value("/logs"))
-                .andExpect(jsonPath("$.errors[0].field").value("level"))
-                .andExpect(jsonPath("$.errors[0].message").value("level is required"));
+                .andExpect(jsonPath("$.errors[?(@.field == 'level')].message").value(hasItem("level is required")));
 
         verifyNoInteractions(kafkaTemplate);
     }

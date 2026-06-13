@@ -5,6 +5,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -223,7 +225,15 @@ class LogControllerTest {
                         .header(API_KEY_HEADER, API_KEY)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.type").value("urn:liarcas:problem:validation-error"))
+                .andExpect(jsonPath("$.title").value("Request validation failed"))
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.detail").value("One or more request fields are invalid."))
+                .andExpect(jsonPath("$.instance").value("/logs"))
+                .andExpect(jsonPath("$.errors[0].field").value("serviceName"))
+                .andExpect(jsonPath("$.errors[0].message").value("serviceName is required"));
 
         verifyNoInteractions(kafkaTemplate);
     }
@@ -242,7 +252,15 @@ class LogControllerTest {
                         .header(API_KEY_HEADER, API_KEY)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.type").value("urn:liarcas:problem:validation-error"))
+                .andExpect(jsonPath("$.title").value("Request validation failed"))
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.detail").value("One or more request fields are invalid."))
+                .andExpect(jsonPath("$.instance").value("/logs"))
+                .andExpect(jsonPath("$.errors[0].field").value("level"))
+                .andExpect(jsonPath("$.errors[0].message").value("level is required"));
 
         verifyNoInteractions(kafkaTemplate);
     }
@@ -260,7 +278,42 @@ class LogControllerTest {
                         .header(API_KEY_HEADER, API_KEY)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.type").value("urn:liarcas:problem:validation-error"))
+                .andExpect(jsonPath("$.title").value("Request validation failed"))
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.detail").value("One or more request fields are invalid."))
+                .andExpect(jsonPath("$.instance").value("/logs"))
+                .andExpect(jsonPath("$.errors[0].field").value("message"))
+                .andExpect(jsonPath("$.errors[0].message").value("message is required"));
+
+        verifyNoInteractions(kafkaTemplate);
+    }
+
+    @Test
+    void shouldReturnProblemDetailForMalformedJson() throws Exception {
+        String payload = """
+                {
+                  "serviceName": "payment-service",
+                  "level": "ERROR",
+                  "message":
+                }
+                """;
+
+        mockMvc.perform(post("/logs")
+                        .header(API_KEY_HEADER, API_KEY)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.type").value("urn:liarcas:problem:malformed-json"))
+                .andExpect(jsonPath("$.title").value("Malformed JSON request"))
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.detail").value("Request body must contain valid JSON."))
+                .andExpect(jsonPath("$.instance").value("/logs"))
+                .andExpect(jsonPath("$.errors[0].field").value("body"))
+                .andExpect(jsonPath("$.errors[0].message").value("Request body must contain valid JSON."));
 
         verifyNoInteractions(kafkaTemplate);
     }

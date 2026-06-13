@@ -26,6 +26,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.liarcas.ingestion.security.SecurityConfig;
 import com.liarcas.models.LogEvent;
 
@@ -55,6 +56,109 @@ class LogControllerTest {
     void clearKafkaTemplateInteractions() {
         clearInvocations(kafkaTemplate);
     }
+
+        @Test
+        void shouldRejectOversizedValues() throws Exception {
+                String longServiceName = "a".repeat(101);
+                String longComponent = "b".repeat(101);
+                String longEnvironment = "c".repeat(51);
+                String longServiceVersion = "d".repeat(51);
+                String longInstanceId = "e".repeat(101);
+                String longTraceId = "f".repeat(129);
+                String longLevel = "ERROR"; // valid level
+                String longMessage = "m".repeat(10001);
+                String longExceptionType = "x".repeat(201);
+                String longStackTraceHash = "y".repeat(129);
+
+                com.liarcas.models.LogEvent request = new com.liarcas.models.LogEvent(
+                                "log-oversize",
+                                null,
+                                longServiceName,
+                                longComponent,
+                                longEnvironment,
+                                longServiceVersion,
+                                longInstanceId,
+                                longTraceId,
+                                longLevel,
+                                longMessage,
+                                longExceptionType,
+                                longStackTraceHash,
+                                Instant.now()
+                );
+
+                MvcResult result = mockMvc.perform(post("/logs")
+                                                .header(API_KEY_HEADER, API_KEY)
+                                                .contentType(MediaType.APPLICATION_JSON)
+                                                .content(objectMapper.writeValueAsString(request)))
+                                .andExpect(status().isBadRequest())
+                                .andReturn();
+
+                JsonNode root = objectMapper.readTree(result.getResponse().getContentAsString());
+                JsonNode errors = root.get("errors");
+
+                String[][] expected = new String[][]{
+                                {"serviceName", "serviceName must not exceed 100 characters"},
+                                {"component", "component must not exceed 100 characters"},
+                                {"environment", "environment must not exceed 50 characters"},
+                                {"serviceVersion", "serviceVersion must not exceed 50 characters"},
+                                {"instanceId", "instanceId must not exceed 100 characters"},
+                                {"traceId", "traceId must not exceed 128 characters"},
+                                {"message", "message must not exceed 10000 characters"},
+                                {"exceptionType", "exceptionType must not exceed 200 characters"},
+                                {"stackTraceHash", "stackTraceHash must not exceed 128 characters"}
+                };
+
+                for (String[] pair : expected) {
+                        String field = pair[0];
+                        String msg = pair[1];
+                        boolean found = false;
+                        for (JsonNode err : errors) {
+                                if (err.has("field") && err.has("message")
+                                                && field.equals(err.get("field").asText())
+                                                && msg.equals(err.get("message").asText())) {
+                                        found = true;
+                                        break;
+                                }
+                        }
+                        assertThat(found).withFailMessage("Expected validation error for %s: %s", field, msg).isTrue();
+                }
+
+                verifyNoInteractions(kafkaTemplate);
+        }
+
+        @Test
+        void shouldRejectInvalidLevelValue() throws Exception {
+                String payload = """
+                                {
+                                  "serviceName": "payment-service",
+                                  "level": "INVALID",
+                                  "message": "Database timeout"
+                                }
+                                """;
+
+                MvcResult result = mockMvc.perform(post("/logs")
+                                                .header(API_KEY_HEADER, API_KEY)
+                                                .contentType(MediaType.APPLICATION_JSON)
+                                                .content(payload))
+                                .andExpect(status().isBadRequest())
+                                .andReturn();
+
+                JsonNode root = objectMapper.readTree(result.getResponse().getContentAsString());
+                JsonNode errors = root.get("errors");
+
+                boolean found = false;
+                for (JsonNode err : errors) {
+                        if (err.has("field") && "level".equals(err.get("field").asText())) {
+                                if (err.has("message") && "level must be a valid log level".equals(err.get("message").asText())) {
+                                        found = true;
+                                        break;
+                                }
+                        }
+                }
+
+                assertThat(found).isTrue();
+                verifyNoInteractions(kafkaTemplate);
+        }
 
     @Test
     void shouldGenerateIdAndTimestampAndResolveTenantFromApiKey() throws Exception {
@@ -318,3 +422,4 @@ class LogControllerTest {
         verifyNoInteractions(kafkaTemplate);
     }
 }
+

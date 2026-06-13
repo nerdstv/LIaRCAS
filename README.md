@@ -228,6 +228,23 @@ Server-managed behavior:
 - `id` is generated if omitted
 - `timestamp` is generated if omitted
 
+### Field limits
+
+To protect the platform from oversized payloads the ingestion API enforces the following limits on string fields (requests exceeding these limits will return HTTP 400 with field-specific validation errors):
+
+- `serviceName`: 100
+- `component`: 100
+- `environment`: 50
+- `serviceVersion`: 50
+- `instanceId`: 100
+- `traceId`: 128
+- `level`: 10 (allowed values: TRACE, DEBUG, INFO, WARN, ERROR, FATAL)
+- `message`: 10000
+- `exceptionType`: 200
+- `stackTraceHash`: 128
+
+These limits are chosen to keep metadata small while allowing `message` to remain large enough for typical error payloads.
+
 ## Local Development
 
 ### Prerequisites

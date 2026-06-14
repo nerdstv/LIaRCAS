@@ -14,6 +14,8 @@ liarcas:
       - client-id: ${LIARCAS_CLIENT_ID:local-dev-client}
         api-key: ${LIARCAS_API_KEY:local-dev-api-key}
         tenant-id: ${LIARCAS_TENANT_ID:tenant-001}
+  request:
+    max-size: ${LIARCAS_REQUEST_MAX_SIZE:1048576}
 
 server:
   port: ${SERVER_PORT:8081}

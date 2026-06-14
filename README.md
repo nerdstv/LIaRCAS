@@ -228,6 +228,51 @@ Server-managed behavior:
 - `id` is generated if omitted
 - `timestamp` is generated if omitted
 
+### Field limits
+
+To protect the platform from oversized payloads the ingestion API enforces the following limits on string fields (requests exceeding these limits will return HTTP 400 with field-specific validation errors):
+
+- `serviceName`: 100
+- `component`: 100
+- `environment`: 50
+- `serviceVersion`: 50
+- `instanceId`: 100
+- `traceId`: 128
+- `level`: 10 (allowed values: TRACE, DEBUG, INFO, WARN, ERROR, FATAL)
+- `message`: 10000
+- `exceptionType`: 200
+- `stackTraceHash`: 128
+
+These limits are chosen to keep metadata small while allowing `message` to remain large enough for typical error payloads.
+
+### Request size limit
+
+In addition to field-level validation, the ingestion API enforces a maximum request body size to protect the service from oversized payloads:
+
+- **Default maximum request size**: 1 MB (1,048,576 bytes)
+- **Configurable via property**: `liarcas.request.max-size` (in bytes)
+- **Configurable via environment variable**: `LIARCAS_REQUEST_MAX_SIZE`
+
+Requests exceeding this limit return HTTP 413 Payload Too Large before the request body is deserialized, which prevents wasting memory and CPU on very large payloads.
+
+**Production deployment note**: This application-level size check is an inner guardrail. For production deployments, it is strongly recommended to enforce request size limits at the reverse proxy, API gateway, or ingress controller layer as well. This provides:
+
+- Faster rejection of oversized requests before they reach the application
+- Protection against denial-of-service attacks
+- Centralized request size policy management across all services
+
+Example Nginx configuration for request size limits:
+
+```nginx
+client_max_body_size 1m;
+```
+
+Example Kubernetes Ingress annotation:
+
+```yaml
+nginx.ingress.kubernetes.io/proxy-body-size: 1m
+```
+
 ## Local Development
 
 ### Prerequisites

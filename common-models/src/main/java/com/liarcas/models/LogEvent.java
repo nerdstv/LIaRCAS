@@ -3,24 +3,48 @@ package com.liarcas.models;
 import java.time.Instant;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 
 public class LogEvent {
 
     private String id;
     private String tenantId;
+
     @NotBlank(message = "serviceName is required")
+    @Size(max = 100, message = "serviceName must not exceed 100 characters")
     private String serviceName;
+
+    @Size(max = 100, message = "component must not exceed 100 characters")
     private String component;
+
+    @Size(max = 50, message = "environment must not exceed 50 characters")
     private String environment;
+
+    @Size(max = 50, message = "serviceVersion must not exceed 50 characters")
     private String serviceVersion;
+
+    @Size(max = 100, message = "instanceId must not exceed 100 characters")
     private String instanceId;
+
+    @Size(max = 128, message = "traceId must not exceed 128 characters")
     private String traceId;
+
     @NotBlank(message = "level is required")
+    @Size(max = 10, message = "level must not exceed 10 characters")
+    @Pattern(regexp = "(?i)^(TRACE|DEBUG|INFO|WARN|ERROR|FATAL)$", message = "level must be a valid log level")
     private String level;
+
     @NotBlank(message = "message is required")
+    @Size(max = 10000, message = "message must not exceed 10000 characters")
     private String message;
+
+    @Size(max = 200, message = "exceptionType must not exceed 200 characters")
     private String exceptionType;
+
+    @Size(max = 128, message = "stackTraceHash must not exceed 128 characters")
     private String stackTraceHash;
+
     private Instant timestamp;
 
     public LogEvent() {

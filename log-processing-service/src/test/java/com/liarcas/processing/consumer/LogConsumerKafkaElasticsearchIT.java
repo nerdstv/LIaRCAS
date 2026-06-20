@@ -6,7 +6,6 @@ import static org.awaitility.Awaitility.await;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.kafka.clients.admin.NewTopic;
@@ -20,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
+import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.kafka.config.TopicBuilder;
 import org.springframework.kafka.support.serializer.JsonSerializer;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -32,7 +32,7 @@ import org.testcontainers.utility.DockerImageName;
 
 import com.liarcas.models.LogEvent;
 import com.liarcas.processing.document.LogEventDocument;
-import com.liarcas.processing.repository.LogEventRepository;
+import com.liarcas.processing.index.IndexNameUtil;
 
 @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.NONE,
@@ -53,7 +53,7 @@ class LogConsumerKafkaElasticsearchIT {
                     .withEnv("ES_JAVA_OPTS", "-Xms512m -Xmx512m");
 
     @Autowired
-    private LogEventRepository logEventRepository;
+    private ElasticsearchOperations elasticsearchOperations;
 
     @DynamicPropertySource
     static void registerProperties(DynamicPropertyRegistry registry) {
@@ -62,7 +62,7 @@ class LogConsumerKafkaElasticsearchIT {
     }
 
     @Test
-    void shouldConsumeKafkaMessageAndStoreItInElasticsearchWithTenantAndRcaMetadata() throws Exception {
+    void shouldConsumeKafkaMessageAndStoreItInTenantSpecificElasticsearchIndex() throws Exception {
         LogEvent event = new LogEvent(
                 "log-123",
                 "payment-service",
@@ -81,23 +81,31 @@ class LogConsumerKafkaElasticsearchIT {
 
         send(event);
 
+        // Verify the document is stored in the tenant-001 specific index
         await().atMost(Duration.ofSeconds(15)).untilAsserted(() -> {
-            Optional<LogEventDocument> saved = logEventRepository.findById("log-123");
+            String tenantIndexName = IndexNameUtil.getTenantIndexName("tenant-001");
+            org.springframework.data.elasticsearch.core.mapping.IndexCoordinates indexCoordinates = 
+                org.springframework.data.elasticsearch.core.mapping.IndexCoordinates.of(tenantIndexName);
+            LogEventDocument saved = elasticsearchOperations.get(
+                    "log-123",
+                    LogEventDocument.class,
+                    indexCoordinates
+            );
 
-            assertThat(saved).isPresent();
-            assertThat(saved.get().getId()).isEqualTo("log-123");
-            assertThat(saved.get().getTenantId()).isEqualTo("tenant-001");
-            assertThat(saved.get().getServiceName()).isEqualTo("payment-service");
-            assertThat(saved.get().getLevel()).isEqualTo("ERROR");
-            assertThat(saved.get().getMessage()).isEqualTo("Database timeout");
-            assertThat(saved.get().getComponent()).isEqualTo("db-client");
-            assertThat(saved.get().getEnvironment()).isEqualTo("prod");
-            assertThat(saved.get().getServiceVersion()).isEqualTo("1.4.2");
-            assertThat(saved.get().getInstanceId()).isEqualTo("payment-pod-7");
-            assertThat(saved.get().getTraceId()).isEqualTo("trace-abc-123");
-            assertThat(saved.get().getExceptionType()).isEqualTo("SQLTransientConnectionException");
-            assertThat(saved.get().getStackTraceHash()).isEqualTo("sth-9f8c2d");
-            assertThat(saved.get().getTimestamp()).isEqualTo(Instant.parse("2026-04-21T10:15:30Z"));
+            assertThat(saved).isNotNull();
+            assertThat(saved.getId()).isEqualTo("log-123");
+            assertThat(saved.getTenantId()).isEqualTo("tenant-001");
+            assertThat(saved.getServiceName()).isEqualTo("payment-service");
+            assertThat(saved.getLevel()).isEqualTo("ERROR");
+            assertThat(saved.getMessage()).isEqualTo("Database timeout");
+            assertThat(saved.getComponent()).isEqualTo("db-client");
+            assertThat(saved.getEnvironment()).isEqualTo("prod");
+            assertThat(saved.getServiceVersion()).isEqualTo("1.4.2");
+            assertThat(saved.getInstanceId()).isEqualTo("payment-pod-7");
+            assertThat(saved.getTraceId()).isEqualTo("trace-abc-123");
+            assertThat(saved.getExceptionType()).isEqualTo("SQLTransientConnectionException");
+            assertThat(saved.getStackTraceHash()).isEqualTo("sth-9f8c2d");
+            assertThat(saved.getTimestamp()).isEqualTo(Instant.parse("2026-04-21T10:15:30Z"));
         });
     }
 

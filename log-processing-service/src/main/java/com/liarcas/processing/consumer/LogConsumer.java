@@ -5,15 +5,15 @@ import org.springframework.stereotype.Component;
 
 import com.liarcas.models.LogEvent;
 import com.liarcas.processing.document.LogEventDocument;
-import com.liarcas.processing.repository.LogEventRepository;
+import com.liarcas.processing.service.TenantScopedDocumentService;
 
 @Component
 public class LogConsumer {
 
-    private final LogEventRepository logEventRepository;
+    private final TenantScopedDocumentService tenantScopedDocumentService;
 
-    public LogConsumer(LogEventRepository logEventRepository) {
-        this.logEventRepository = logEventRepository;
+    public LogConsumer(TenantScopedDocumentService tenantScopedDocumentService) {
+        this.tenantScopedDocumentService = tenantScopedDocumentService;
     }
 
     @KafkaListener(topics = "raw-logs")
@@ -34,8 +34,8 @@ public class LogConsumer {
                 message.getTimestamp()
         );
 
-        logEventRepository.save(document);
+        tenantScopedDocumentService.save(document);
 
-        System.out.println("Consumed and saved log event: " + document.getId());
+        System.out.println("Consumed and saved log event: " + document.getId() + " to tenant index: logs-" + document.getTenantId());
     }
 }

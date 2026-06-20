@@ -14,13 +14,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.liarcas.models.LogEvent;
 import com.liarcas.processing.document.LogEventDocument;
-import com.liarcas.processing.repository.LogEventRepository;
+import com.liarcas.processing.service.TenantScopedDocumentService;
 
 @ExtendWith(MockitoExtension.class)
 class LogConsumerTest {
 
     @Mock
-    private LogEventRepository logEventRepository;
+    private TenantScopedDocumentService tenantScopedDocumentService;
 
     @InjectMocks
     private LogConsumer logConsumer;
@@ -47,7 +47,7 @@ class LogConsumerTest {
         logConsumer.consume(message);
 
         ArgumentCaptor<LogEventDocument> captor = ArgumentCaptor.forClass(LogEventDocument.class);
-        verify(logEventRepository).save(captor.capture());
+        verify(tenantScopedDocumentService).save(captor.capture());
 
         LogEventDocument savedDocument = captor.getValue();
         assertThat(savedDocument.getId()).isEqualTo("log-123");

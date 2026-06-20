@@ -1,6 +1,9 @@
 package com.liarcas.processing.service;
 
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
+import org.springframework.data.elasticsearch.core.IndexOperations;
+import org.springframework.data.elasticsearch.core.document.Document;
+import org.springframework.data.elasticsearch.core.index.Settings;
 import org.springframework.data.elasticsearch.core.mapping.IndexCoordinates;
 import org.springframework.data.elasticsearch.core.query.IndexQuery;
 import org.springframework.data.elasticsearch.core.query.IndexQueryBuilder;
@@ -43,6 +46,8 @@ public class TenantScopedDocumentService {
         }
 
         String tenantIndexName = IndexNameUtil.getTenantIndexName(document.getTenantId());
+        IndexCoordinates indexCoordinates = IndexCoordinates.of(tenantIndexName);
+        ensureTenantIndexExists(indexCoordinates);
         
         // Create an IndexQuery with the tenant-specific index
         // Use CREATE operation type to ensure proper operation on data streams and indices
@@ -53,9 +58,24 @@ public class TenantScopedDocumentService {
                 .build();
         
         // Index the document to the tenant-scoped index using IndexCoordinates.of()
-        IndexCoordinates indexCoordinates = IndexCoordinates.of(tenantIndexName);
         elasticsearchOperations.index(indexQuery, indexCoordinates);
+        elasticsearchOperations.indexOps(indexCoordinates).refresh();
         
         return document;
+    }
+
+    private void ensureTenantIndexExists(IndexCoordinates indexCoordinates) {
+        IndexOperations tenantIndexOperations = elasticsearchOperations.indexOps(indexCoordinates);
+
+        if (tenantIndexOperations.exists()) {
+            return;
+        }
+
+        IndexOperations documentIndexOperations = elasticsearchOperations.indexOps(LogEventDocument.class);
+        Settings settings = documentIndexOperations.createSettings();
+        Document mapping = documentIndexOperations.createMapping();
+
+        tenantIndexOperations.create(settings);
+        tenantIndexOperations.putMapping(mapping);
     }
 }

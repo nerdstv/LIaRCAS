@@ -45,9 +45,11 @@ public class TenantScopedDocumentService {
         String tenantIndexName = IndexNameUtil.getTenantIndexName(document.getTenantId());
         
         // Create an IndexQuery with the tenant-specific index
+        // Use CREATE operation type to ensure proper operation on data streams and indices
         IndexQuery indexQuery = new IndexQueryBuilder()
                 .withId(document.getId())
                 .withObject(document)
+                .withOpType(org.springframework.data.elasticsearch.core.query.IndexQuery.OpType.CREATE)
                 .build();
         
         // Index the document to the tenant-scoped index using IndexCoordinates.of()

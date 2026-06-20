@@ -74,14 +74,18 @@ class TenantScopedDocumentServiceIT {
             String indexName = IndexNameUtil.getTenantIndexName("tenant-001");
             org.springframework.data.elasticsearch.core.mapping.IndexCoordinates indexCoordinates = 
                 org.springframework.data.elasticsearch.core.mapping.IndexCoordinates.of(indexName);
-            LogEventDocument retrieved = elasticsearchOperations.get(
-                    "log-tenant-001-1",
-                    LogEventDocument.class,
-                    indexCoordinates
-            );
-            assertThat(retrieved).isNotNull();
-            assertThat(retrieved.getTenantId()).isEqualTo("tenant-001");
-            assertThat(retrieved.getServiceName()).isEqualTo("service-a");
+            try {
+                LogEventDocument retrieved = elasticsearchOperations.get(
+                        "log-tenant-001-1",
+                        LogEventDocument.class,
+                        indexCoordinates
+                );
+                assertThat(retrieved).isNotNull();
+                assertThat(retrieved.getTenantId()).isEqualTo("tenant-001");
+                assertThat(retrieved.getServiceName()).isEqualTo("service-a");
+            } catch (org.springframework.data.elasticsearch.NoSuchIndexException e) {
+                throw new AssertionError("Index or document not found yet: " + e.getMessage());
+            }
         });
     }
 
@@ -112,14 +116,18 @@ class TenantScopedDocumentServiceIT {
             String indexName = IndexNameUtil.getTenantIndexName("tenant-002");
             org.springframework.data.elasticsearch.core.mapping.IndexCoordinates indexCoordinates = 
                 org.springframework.data.elasticsearch.core.mapping.IndexCoordinates.of(indexName);
-            LogEventDocument retrieved = elasticsearchOperations.get(
-                    "log-tenant-002-1",
-                    LogEventDocument.class,
-                    indexCoordinates
-            );
-            assertThat(retrieved).isNotNull();
-            assertThat(retrieved.getTenantId()).isEqualTo("tenant-002");
-            assertThat(retrieved.getServiceName()).isEqualTo("service-b");
+            try {
+                LogEventDocument retrieved = elasticsearchOperations.get(
+                        "log-tenant-002-1",
+                        LogEventDocument.class,
+                        indexCoordinates
+                );
+                assertThat(retrieved).isNotNull();
+                assertThat(retrieved.getTenantId()).isEqualTo("tenant-002");
+                assertThat(retrieved.getServiceName()).isEqualTo("service-b");
+            } catch (org.springframework.data.elasticsearch.NoSuchIndexException e) {
+                throw new AssertionError("Index or document not found yet: " + e.getMessage());
+            }
         });
     }
 
@@ -170,23 +178,27 @@ class TenantScopedDocumentServiceIT {
             org.springframework.data.elasticsearch.core.mapping.IndexCoordinates indexCoordinates002 = 
                 org.springframework.data.elasticsearch.core.mapping.IndexCoordinates.of(index002);
 
-            // Document 1 should be in index001
-            LogEventDocument retrieved1 = elasticsearchOperations.get(
-                    "log-001",
-                    LogEventDocument.class,
-                    indexCoordinates001
-            );
-            assertThat(retrieved1).isNotNull();
-            assertThat(retrieved1.getTenantId()).isEqualTo("tenant-001");
+            try {
+                // Document 1 should be in index001
+                LogEventDocument retrieved1 = elasticsearchOperations.get(
+                        "log-001",
+                        LogEventDocument.class,
+                        indexCoordinates001
+                );
+                assertThat(retrieved1).isNotNull();
+                assertThat(retrieved1.getTenantId()).isEqualTo("tenant-001");
 
-            // Document 2 should be in index002
-            LogEventDocument retrieved2 = elasticsearchOperations.get(
-                    "log-002",
-                    LogEventDocument.class,
-                    indexCoordinates002
-            );
-            assertThat(retrieved2).isNotNull();
-            assertThat(retrieved2.getTenantId()).isEqualTo("tenant-002");
+                // Document 2 should be in index002
+                LogEventDocument retrieved2 = elasticsearchOperations.get(
+                        "log-002",
+                        LogEventDocument.class,
+                        indexCoordinates002
+                );
+                assertThat(retrieved2).isNotNull();
+                assertThat(retrieved2.getTenantId()).isEqualTo("tenant-002");
+            } catch (org.springframework.data.elasticsearch.NoSuchIndexException e) {
+                throw new AssertionError("Index or document not found yet: " + e.getMessage());
+            }
         });
     }
 

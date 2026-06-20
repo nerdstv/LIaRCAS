@@ -14,10 +14,10 @@ import org.springframework.data.elasticsearch.annotations.FieldType;
  * Documents are persisted to tenant-scoped indices named logs-{tenantId}.
  * The actual index name is determined at runtime by TenantScopedDocumentService.
  * 
- * Note: The indexName attribute is not used when documents are saved via
- * ElasticsearchOperations with dynamic index names.
+ * The indexName is set to a placeholder value since dynamic runtime index selection
+ * is used instead of this annotation's index name.
  */
-@Document(indexName = "logs")
+@Document(indexName = "logs-placeholder")
 public class LogEventDocument {
 
     @Id

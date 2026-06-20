@@ -86,11 +86,18 @@ class LogConsumerKafkaElasticsearchIT {
             String tenantIndexName = IndexNameUtil.getTenantIndexName("tenant-001");
             org.springframework.data.elasticsearch.core.mapping.IndexCoordinates indexCoordinates = 
                 org.springframework.data.elasticsearch.core.mapping.IndexCoordinates.of(tenantIndexName);
-            LogEventDocument saved = elasticsearchOperations.get(
-                    "log-123",
-                    LogEventDocument.class,
-                    indexCoordinates
-            );
+            
+            LogEventDocument saved = null;
+            try {
+                saved = elasticsearchOperations.get(
+                        "log-123",
+                        LogEventDocument.class,
+                        indexCoordinates
+                );
+            } catch (org.springframework.data.elasticsearch.NoSuchIndexException e) {
+                // Index not created yet, document not persisted
+                throw new AssertionError("Index or document not found yet: " + e.getMessage());
+            }
 
             assertThat(saved).isNotNull();
             assertThat(saved.getId()).isEqualTo("log-123");

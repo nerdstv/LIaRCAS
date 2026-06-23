@@ -1,3 +1,4 @@
+# Build stage: compiles all required modules and packages ingestion service.
 FROM maven:3.9.6-eclipse-temurin-21 AS build
 WORKDIR /workspace
 
@@ -10,6 +11,7 @@ COPY root-cause-service root-cause-service
 
 RUN mvn -pl log-ingestion-service -am clean package -DskipTests
 
+# Runtime stage: runs only the packaged JAR on a slim JRE image.
 FROM eclipse-temurin:21-jre
 WORKDIR /app
 COPY --from=build /workspace/log-ingestion-service/target/log-ingestion-service-0.0.1-SNAPSHOT.jar app.jar

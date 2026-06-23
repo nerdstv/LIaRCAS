@@ -1,23 +1,30 @@
+# Primary CI workflow for validating pull requests and main branch pushes.
 name: CI
 
 on:
+  # Run CI for every pull request targeting any branch.
   pull_request:
+  # Also run CI when code is pushed directly to main.
   push:
     branches:
       - main
       - '**'
 
+# Restrict token scope for least-privilege workflow execution.
 permissions:
   contents: read
 
 jobs:
   build-and-test:
+    # Use the latest hosted Ubuntu runner for Maven builds.
     runs-on: ubuntu-latest
 
     steps:
+      # Fetch repository sources for the workflow.
       - name: Checkout
         uses: actions/checkout@v6
 
+      # Install JDK and enable dependency caching for faster runs.
       - name: Set up Java
         uses: actions/setup-java@v5
         with:
@@ -25,8 +32,10 @@ jobs:
           java-version: '21'
           cache: maven
 
+      # Ensure the Maven wrapper script has execute permissions on Linux.
       - name: Make Maven wrapper executable
         run: chmod +x mvnw
 
+      # Execute full Maven verification (unit + integration test lifecycle).
       - name: Run build and tests
         run: ./mvnw -B verify

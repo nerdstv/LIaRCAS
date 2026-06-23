@@ -14,15 +14,30 @@ import org.springframework.web.bind.annotation.RestController;
 import com.liarcas.ingestion.security.TenantPrincipal;
 import com.liarcas.models.LogEvent;
 
+/**
+ * Receives log events from clients and forwards them to Kafka.
+ */
 @RestController
 public class LogController {
 
     private final KafkaTemplate<String, LogEvent> kafkaTemplate;
 
+    /**
+     * Creates a controller that publishes incoming events to Kafka.
+     *
+     * @param kafkaTemplate Kafka producer for log events
+     */
     public LogController(KafkaTemplate<String, LogEvent> kafkaTemplate) {
         this.kafkaTemplate = kafkaTemplate;
     }
 
+    /**
+     * Validates and enriches an incoming event, then publishes it to the raw logs topic.
+     *
+     * @param logEvent incoming event payload
+     * @param authentication authenticated tenant context
+     * @return the accepted and enriched event
+     */
     @PostMapping("/logs")
     public LogEvent ingestLog(@Valid @RequestBody LogEvent logEvent, Authentication authentication) {
         if (authentication == null || !(authentication.getPrincipal() instanceof TenantPrincipal tenantPrincipal)) {

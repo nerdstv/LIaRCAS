@@ -8,8 +8,7 @@ on:
   push:
     branches:
       - main
-      - '**'
-
+      
 # Restrict token scope for least-privilege workflow execution.
 permissions:
   contents: read

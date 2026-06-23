@@ -4,10 +4,18 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+/**
+ * Resolves tenant principals from configured API keys.
+ */
 public class ApiKeyTenantResolver {
 
     private final Map<String, TenantPrincipal> tenantsByApiKey;
 
+    /**
+     * Builds an immutable API key lookup table from configured clients.
+     *
+     * @param authProperties API key authentication configuration
+     */
     public ApiKeyTenantResolver(ApiKeyAuthProperties authProperties) {
         if (authProperties.getClients().isEmpty()) {
             throw new IllegalStateException("At least one auth client must be configured");
@@ -39,6 +47,12 @@ public class ApiKeyTenantResolver {
         this.tenantsByApiKey = Map.copyOf(configuredClients);
     }
 
+    /**
+     * Resolves a tenant principal from a presented API key.
+     *
+     * @param apiKey API key value from the request header
+     * @return resolved tenant principal when key is valid
+     */
     public Optional<TenantPrincipal> resolve(String apiKey) {
         if (apiKey == null || apiKey.isBlank()) {
             return Optional.empty();

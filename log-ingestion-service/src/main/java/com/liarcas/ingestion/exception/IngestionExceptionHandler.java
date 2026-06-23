@@ -12,9 +12,19 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.ServletWebRequest;
 
+/**
+ * Produces RFC 7807 problem responses for request validation and parsing errors.
+ */
 @RestControllerAdvice
 public class IngestionExceptionHandler {
 
+    /**
+     * Converts bean validation failures into a structured problem response.
+     *
+     * @param exception validation exception from Spring MVC binding
+     * @param request current web request
+     * @return problem detail payload describing validation errors
+     */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     ProblemDetail handleValidationException(
             MethodArgumentNotValidException exception,
@@ -34,6 +44,13 @@ public class IngestionExceptionHandler {
         return problemDetail;
     }
 
+    /**
+     * Converts malformed JSON payloads into a structured problem response.
+     *
+     * @param exception unreadable request body exception
+     * @param request current web request
+     * @return problem detail payload describing the malformed JSON
+     */
     @ExceptionHandler(HttpMessageNotReadableException.class)
     ProblemDetail handleMalformedJson(
             HttpMessageNotReadableException exception,
@@ -49,10 +66,22 @@ public class IngestionExceptionHandler {
         return problemDetail;
     }
 
+    /**
+     * Maps Spring field errors to API validation errors.
+     *
+     * @param fieldError field validation error
+     * @return simplified validation error payload
+     */
     private ValidationError toValidationError(FieldError fieldError) {
         return new ValidationError(fieldError.getField(), fieldError.getDefaultMessage());
     }
 
+    /**
+     * Represents a single field validation error in API responses.
+     *
+     * @param field invalid field name
+     * @param message validation message
+     */
     record ValidationError(String field, String message) {
     }
 }

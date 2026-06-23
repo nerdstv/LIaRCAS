@@ -1,6 +1,8 @@
 version: "3.8"
 
+# Local development stack for LIaRCAS services and supporting infrastructure.
 services:
+  # Coordination service required by the selected Kafka image.
   zookeeper:
     image: confluentinc/cp-zookeeper:7.6.0
     environment:
@@ -8,6 +10,7 @@ services:
     ports:
       - "2181:2181"
 
+  # Kafka broker with internal and host listeners for container and local clients.
   kafka:
     image: confluentinc/cp-kafka:7.6.0
     depends_on:
@@ -23,6 +26,7 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
 
+  # Single-node Elasticsearch instance used by processing and root-cause flows.
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
     environment:
@@ -32,6 +36,7 @@ services:
     ports:
       - "9200:9200"
 
+  # One-shot initializer that ensures required Kafka topics exist before services start.
   kafka-init:
     image: confluentinc/cp-kafka:7.6.0
     depends_on:
@@ -42,6 +47,7 @@ services:
         cub kafka-ready -b kafka:29092 1 60 && \
         kafka-topics --create --if-not-exists --topic raw-logs --bootstrap-server kafka:29092 --partitions 1 --replication-factor 1
 
+  # REST API for ingesting logs into Kafka.
   log-ingestion-service:
     build:
       context: .
@@ -57,6 +63,7 @@ services:
       LIARCAS_API_KEY: local-dev-api-key
       LIARCAS_TENANT_ID: tenant-001
 
+  # Kafka consumer that persists log events to Elasticsearch.
   log-processing-service:
     build:
       context: .

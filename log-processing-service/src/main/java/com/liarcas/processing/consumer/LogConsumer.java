@@ -7,15 +7,28 @@ import com.liarcas.models.LogEvent;
 import com.liarcas.processing.document.LogEventDocument;
 import com.liarcas.processing.repository.LogEventRepository;
 
+/**
+ * Consumes raw log events from Kafka and persists them to Elasticsearch.
+ */
 @Component
 public class LogConsumer {
 
     private final LogEventRepository logEventRepository;
 
+    /**
+     * Creates a Kafka consumer for log events.
+     *
+     * @param logEventRepository repository used to persist log documents
+     */
     public LogConsumer(LogEventRepository logEventRepository) {
         this.logEventRepository = logEventRepository;
     }
 
+    /**
+     * Receives a log event from Kafka and stores the mapped document.
+     *
+     * @param message consumed log event
+     */
     @KafkaListener(topics = "raw-logs")
     public void consume(LogEvent message) {
         LogEventDocument document = new LogEventDocument(

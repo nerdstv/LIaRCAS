@@ -2,6 +2,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <!-- Aggregator POM for the full LIaRCAS multi-module build. -->
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
@@ -19,15 +20,19 @@
     <description>Distributed Log Ingestion and Root Cause Analysis System</description>
 
     <properties>
+        <!-- Project-wide Java toolchain version inherited by child modules. -->
         <java.version>17</java.version>
     </properties>
 
+    <!-- Build order for module compilation and dependency resolution. -->
     <modules>
         <module>common-models</module>
         <module>log-ingestion-service</module>
         <module>log-processing-service</module>
         <module>root-cause-service</module>
     </modules>
+
+    <!-- Shared test libraries available to child modules. -->
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -43,6 +48,10 @@
 
     <build>
         <plugins>
+            <!--
+                Runs integration tests named *IT.java during Maven verify phase,
+                separate from unit tests.
+            -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-failsafe-plugin</artifactId>

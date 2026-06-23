@@ -26,11 +26,26 @@ public class RequestSizeFilter implements Filter {
     private final RequestSizeProperties requestSizeProperties;
     private final ObjectMapper objectMapper;
 
+    /**
+     * Creates a filter that enforces maximum payload size for /logs.
+     *
+     * @param requestSizeProperties configured payload size limits
+     * @param objectMapper mapper used to serialize error responses
+     */
     public RequestSizeFilter(RequestSizeProperties requestSizeProperties, ObjectMapper objectMapper) {
         this.requestSizeProperties = requestSizeProperties;
         this.objectMapper = objectMapper;
     }
 
+    /**
+     * Rejects requests to /logs when Content-Length exceeds the configured limit.
+     *
+     * @param servletRequest current servlet request
+     * @param servletResponse current servlet response
+     * @param filterChain remaining filter chain
+     * @throws IOException when response writing fails
+     * @throws ServletException when downstream filters fail
+     */
     @Override
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain)
             throws IOException, ServletException {
@@ -93,6 +108,15 @@ public class RequestSizeFilter implements Filter {
         public String detail;
         public String instance;
 
+        /**
+         * Creates an RFC 7807 compatible error payload.
+         *
+         * @param type machine-readable problem type URI
+         * @param title short human-readable summary
+         * @param status HTTP status code
+         * @param detail detailed error message
+         * @param instance request path that caused the error
+         */
         public ErrorResponse(String type, String title, int status, String detail, String instance) {
             this.type = type;
             this.title = title;
@@ -101,11 +125,39 @@ public class RequestSizeFilter implements Filter {
             this.instance = instance;
         }
 
-        // Getters for Jackson serialization
+        /**
+         * Returns the problem type.
+         *
+         * @return problem type URI
+         */
         public String getType() { return type; }
+
+        /**
+         * Returns the problem title.
+         *
+         * @return problem title
+         */
         public String getTitle() { return title; }
+
+        /**
+         * Returns the HTTP status code.
+         *
+         * @return HTTP status code
+         */
         public int getStatus() { return status; }
+
+        /**
+         * Returns the problem detail message.
+         *
+         * @return detail message
+         */
         public String getDetail() { return detail; }
+
+        /**
+         * Returns the request instance path.
+         *
+         * @return request path
+         */
         public String getInstance() { return instance; }
     }
 }

@@ -5,7 +5,8 @@ import org.springframework.stereotype.Component;
 
 import com.liarcas.models.LogEvent;
 import com.liarcas.processing.document.LogEventDocument;
-import com.liarcas.processing.repository.LogEventRepository;
+import com.liarcas.processing.index.IndexNameUtil;
+import com.liarcas.processing.service.TenantScopedDocumentService;
 
 /**
  * Consumes raw log events from Kafka and persists them to Elasticsearch.
@@ -13,15 +14,15 @@ import com.liarcas.processing.repository.LogEventRepository;
 @Component
 public class LogConsumer {
 
-    private final LogEventRepository logEventRepository;
+    private final TenantScopedDocumentService tenantScopedDocumentService;
 
     /**
      * Creates a Kafka consumer for log events.
      *
      * @param logEventRepository repository used to persist log documents
      */
-    public LogConsumer(LogEventRepository logEventRepository) {
-        this.logEventRepository = logEventRepository;
+    public LogConsumer(TenantScopedDocumentService tenantScopedDocumentService) {
+        this.tenantScopedDocumentService = tenantScopedDocumentService;
     }
 
     /**
@@ -47,8 +48,13 @@ public class LogConsumer {
                 message.getTimestamp()
         );
 
-        logEventRepository.save(document);
+        tenantScopedDocumentService.save(document);
 
-        System.out.println("Consumed and saved log event: " + document.getId());
+        System.out.println(
+            "Consumed and saved log event: "
+                + document.getId()
+                + " to tenant index: "
+                + IndexNameUtil.getTenantIndexName(document.getTenantId())
+        );
     }
 }

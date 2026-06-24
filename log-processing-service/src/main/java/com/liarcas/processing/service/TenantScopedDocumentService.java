@@ -1,0 +1,84 @@
+package com.liarcas.processing.service;
+
+import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
+import org.springframework.data.elasticsearch.core.IndexOperations;
+import org.springframework.data.elasticsearch.core.document.Document;
+import org.springframework.data.elasticsearch.core.index.Settings;
+import org.springframework.data.elasticsearch.core.mapping.IndexCoordinates;
+import org.springframework.data.elasticsearch.core.query.IndexQuery;
+import org.springframework.data.elasticsearch.core.query.IndexQueryBuilder;
+import org.springframework.stereotype.Service;
+
+import com.liarcas.processing.document.LogEventDocument;
+import com.liarcas.processing.index.IndexNameUtil;
+
+/**
+ * Service for persisting LogEventDocuments to tenant-scoped Elasticsearch indices.
+ * 
+ * Each tenant gets its own index (e.g., liarcas-logs-tenant-001, liarcas-logs-tenant-002),
+ * ensuring complete data isolation and independent index management per tenant.
+ */
+@Service
+public class TenantScopedDocumentService {
+
+    private final ElasticsearchOperations elasticsearchOperations;
+
+    public TenantScopedDocumentService(ElasticsearchOperations elasticsearchOperations) {
+        this.elasticsearchOperations = elasticsearchOperations;
+    }
+
+    /**
+     * Save a log event document to the tenant-scoped index.
+     * 
+     * The index name is derived from the document's tenantId.
+     * 
+     * @param document the LogEventDocument to save
+     * @return the saved document
+     * @throws IllegalArgumentException if tenantId is null or blank
+     */
+    public LogEventDocument save(LogEventDocument document) {
+        if (document == null) {
+            throw new IllegalArgumentException("Document cannot be null");
+        }
+
+        if (document.getTenantId() == null || document.getTenantId().isBlank()) {
+            throw new IllegalArgumentException("Document tenantId cannot be null or blank");
+        }
+
+        String tenantIndexName = IndexNameUtil.getTenantIndexName(document.getTenantId());
+        IndexCoordinates indexCoordinates = IndexCoordinates.of(tenantIndexName);
+        ensureTenantIndexExists(indexCoordinates);
+        
+        // Create an IndexQuery with the tenant-specific index
+        // Use CREATE operation type to ensure proper operation on data streams and indices
+        IndexQuery indexQuery = new IndexQueryBuilder()
+                .withId(document.getId())
+                .withObject(document)
+                .withOpType(org.springframework.data.elasticsearch.core.query.IndexQuery.OpType.CREATE)
+                .build();
+        
+        // Index the document to the tenant-scoped index using IndexCoordinates.of()
+        elasticsearchOperations.index(indexQuery, indexCoordinates);
+        elasticsearchOperations.indexOps(indexCoordinates).refresh();
+        
+        return document;
+    }
+
+    private void ensureTenantIndexExists(IndexCoordinates indexCoordinates) {
+        IndexOperations tenantIndexOperations = elasticsearchOperations.indexOps(indexCoordinates);
+
+        if (tenantIndexOperations.exists()) {
+            return;
+        }
+
+        IndexOperations documentIndexOperations = elasticsearchOperations.indexOps(LogEventDocument.class);
+        Settings settings = documentIndexOperations.createSettings();
+        Document mapping = documentIndexOperations.createMapping();
+
+        // Keep tenant index shards allocatable in single-node test environments.
+        settings.put("index.number_of_replicas", 0);
+
+        tenantIndexOperations.create(settings);
+        tenantIndexOperations.putMapping(mapping);
+    }
+}

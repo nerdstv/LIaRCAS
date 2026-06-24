@@ -8,7 +8,7 @@ on:
   push:
     branches:
       - main
-
+      
 # Restrict token scope for least-privilege workflow execution.
 permissions:
   contents: read
@@ -38,3 +38,15 @@ jobs:
       # Execute full Maven verification (unit + integration test lifecycle).
       - name: Run build and tests
         run: ./mvnw -B verify
+
+      # Run Docker-backed end-to-end validation script on every PR and main merge.
+      # IMPORTANT: keep runThis.ps1 updated whenever new functionality is added,
+      # so CI continuously validates both existing and newly introduced behavior.
+      - name: Run manual E2E validation script
+        shell: pwsh
+        run: ./runThis.ps1 -NoBuild
+
+      # Always tear down containers to avoid resource leaks on the runner.
+      - name: Docker compose down
+        if: always()
+        run: docker compose down -v --remove-orphans

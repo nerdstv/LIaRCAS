@@ -9,9 +9,15 @@ import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.FieldType;
 
 /**
- * Elasticsearch representation of a processed log event.
+ * Represents a log event document stored in Elasticsearch.
+ * 
+ * Documents are persisted to tenant-scoped indices named logs-{tenantId}.
+ * The actual index name is determined at runtime by TenantScopedDocumentService.
+ * 
+ * The indexName is set to a placeholder value since dynamic runtime index selection
+ * is used instead of this annotation's index name.
  */
-@Document(indexName = "logs")
+@Document(indexName = "logs-placeholder")
 public class LogEventDocument {
 
     @Id

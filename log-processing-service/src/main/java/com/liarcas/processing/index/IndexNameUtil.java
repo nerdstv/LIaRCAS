@@ -11,12 +11,13 @@ import java.util.regex.Pattern;
  * - Cannot start with . or -
  * - Cannot contain :
  * 
- * This utility generates tenant-scoped index names like logs-tenant-001
+ * This utility generates tenant-scoped index names like liarcas-logs-tenant-001
  * and sanitizes tenantId to ensure valid index names.
  */
 public class IndexNameUtil {
 
-    private static final String INDEX_PREFIX = "logs";
+    // Avoid built-in Elastic data stream templates that match logs-*-*.
+    private static final String INDEX_PREFIX = "liarcas-logs";
     private static final Pattern INVALID_CHARS = Pattern.compile("[^a-z0-9._-]");
     private static final Pattern LEADING_INVALID = Pattern.compile("^[._-]+");
 
@@ -24,7 +25,7 @@ public class IndexNameUtil {
      * Generate a tenant-scoped index name.
      * 
      * @param tenantId the tenant identifier
-     * @return a sanitized index name like logs-tenant-001
+    * @return a sanitized index name like liarcas-logs-tenant-001
      */
     public static String getTenantIndexName(String tenantId) {
         if (tenantId == null || tenantId.isBlank()) {

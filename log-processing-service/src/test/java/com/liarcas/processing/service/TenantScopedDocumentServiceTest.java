@@ -69,7 +69,7 @@ class TenantScopedDocumentServiceTest {
 
         ArgumentCaptor<IndexCoordinates> indexCoordinatesCaptor = ArgumentCaptor.forClass(IndexCoordinates.class);
         verify(elasticsearchOperations).index(any(IndexQuery.class), indexCoordinatesCaptor.capture());
-        assertThat(indexCoordinatesCaptor.getValue().getIndexName()).isEqualTo("logs-tenant-001");
+        assertThat(indexCoordinatesCaptor.getValue().getIndexName()).isEqualTo("liarcas-logs-tenant-001");
         verify(tenantIndexOperations).create(settings);
         verify(tenantIndexOperations).putMapping(mapping);
         verify(tenantIndexOperations).refresh();

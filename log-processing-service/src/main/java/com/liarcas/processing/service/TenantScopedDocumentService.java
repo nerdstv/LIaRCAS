@@ -15,7 +15,7 @@ import com.liarcas.processing.index.IndexNameUtil;
 /**
  * Service for persisting LogEventDocuments to tenant-scoped Elasticsearch indices.
  * 
- * Each tenant gets its own index (e.g., logs-tenant-001, logs-tenant-002),
+ * Each tenant gets its own index (e.g., liarcas-logs-tenant-001, liarcas-logs-tenant-002),
  * ensuring complete data isolation and independent index management per tenant.
  */
 @Service
@@ -74,6 +74,9 @@ public class TenantScopedDocumentService {
         IndexOperations documentIndexOperations = elasticsearchOperations.indexOps(LogEventDocument.class);
         Settings settings = documentIndexOperations.createSettings();
         Document mapping = documentIndexOperations.createMapping();
+
+        // Keep tenant index shards allocatable in single-node test environments.
+        settings.put("index.number_of_replicas", 0);
 
         tenantIndexOperations.create(settings);
         tenantIndexOperations.putMapping(mapping);

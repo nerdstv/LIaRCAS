@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component;
 
 import com.liarcas.models.LogEvent;
 import com.liarcas.processing.document.LogEventDocument;
+import com.liarcas.processing.index.IndexNameUtil;
 import com.liarcas.processing.service.TenantScopedDocumentService;
 
 /**
@@ -49,6 +50,11 @@ public class LogConsumer {
 
         tenantScopedDocumentService.save(document);
 
-        System.out.println("Consumed and saved log event: " + document.getId() + " to tenant index: logs-" + document.getTenantId());
+        System.out.println(
+            "Consumed and saved log event: "
+                + document.getId()
+                + " to tenant index: "
+                + IndexNameUtil.getTenantIndexName(document.getTenantId())
+        );
     }
 }

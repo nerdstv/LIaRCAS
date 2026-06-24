@@ -10,19 +10,19 @@ class IndexNameUtilTest {
     @Test
     void shouldGenerateTenantIndexNameWithValidTenantId() {
         String indexName = IndexNameUtil.getTenantIndexName("tenant-001");
-        assertThat(indexName).isEqualTo("logs-tenant-001");
+        assertThat(indexName).isEqualTo("liarcas-logs-tenant-001");
     }
 
     @Test
     void shouldGenerateTenantIndexNameAndSanitizeTenantId() {
         String indexName = IndexNameUtil.getTenantIndexName("TENANT_001");
-        assertThat(indexName).isEqualTo("logs-tenant_001");
+        assertThat(indexName).isEqualTo("liarcas-logs-tenant_001");
     }
 
     @Test
     void shouldSanitizeSpecialCharactersToHyphens() {
         String indexName = IndexNameUtil.getTenantIndexName("tenant@001#test");
-        assertThat(indexName).isEqualTo("logs-tenant-001-test");
+        assertThat(indexName).isEqualTo("liarcas-logs-tenant-001-test");
     }
 
     @Test
@@ -31,9 +31,9 @@ class IndexNameUtilTest {
         String index2 = IndexNameUtil.getTenantIndexName("tenant-002");
         String index3 = IndexNameUtil.getTenantIndexName("org-acme");
 
-        assertThat(index1).isEqualTo("logs-tenant-001");
-        assertThat(index2).isEqualTo("logs-tenant-002");
-        assertThat(index3).isEqualTo("logs-org-acme");
+        assertThat(index1).isEqualTo("liarcas-logs-tenant-001");
+        assertThat(index2).isEqualTo("liarcas-logs-tenant-002");
+        assertThat(index3).isEqualTo("liarcas-logs-org-acme");
     }
 
     @Test
@@ -54,13 +54,13 @@ class IndexNameUtilTest {
     void shouldRemoveLeadingSpecialCharacters() {
         // Index names cannot start with . or -
         String indexName = IndexNameUtil.getTenantIndexName("---tenant-001");
-        assertThat(indexName).isEqualTo("logs-tenant-001");
+        assertThat(indexName).isEqualTo("liarcas-logs-tenant-001");
     }
 
     @Test
     void shouldPreserveDotsUnderscoresAndHyphens() {
         String indexName = IndexNameUtil.getTenantIndexName("tenant.org_name-001");
-        assertThat(indexName).isEqualTo("logs-tenant.org_name-001");
+        assertThat(indexName).isEqualTo("liarcas-logs-tenant.org_name-001");
     }
 
     @Test

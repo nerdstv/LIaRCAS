@@ -15,6 +15,7 @@ import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -97,6 +98,9 @@ class LogConsumerKafkaElasticsearchIT {
             } catch (org.springframework.data.elasticsearch.NoSuchIndexException e) {
                 // Index not created yet, document not persisted
                 throw new AssertionError("Index or document not found yet: " + e.getMessage());
+            } catch (DataAccessResourceFailureException e) {
+                // Index exists but shards may still be initializing in test container startup.
+                throw new AssertionError("Elasticsearch shard not ready yet: " + e.getMessage());
             }
 
             assertThat(saved).isNotNull();

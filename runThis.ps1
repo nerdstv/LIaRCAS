@@ -28,6 +28,33 @@ function Wait-Http {
     throw "Timed out waiting for $Url"
 }
 
+function Wait-HttpWithServiceRecovery {
+    param(
+        [Parameter(Mandatory = $true)][string]$Url,
+        [Parameter(Mandatory = $true)][string]$ComposeServiceName,
+        [int]$TimeoutSeconds = 120,
+        [int]$RecoveryAttempts = 1
+    )
+
+    $attempt = 0
+    while ($attempt -le $RecoveryAttempts) {
+        try {
+            return Wait-Http -Url $Url -TimeoutSeconds $TimeoutSeconds
+        }
+        catch {
+            if ($attempt -ge $RecoveryAttempts) {
+                throw
+            }
+
+            Write-Host "Health check timed out for $Url. Restarting compose service '$ComposeServiceName' and retrying..." -ForegroundColor Yellow
+            docker compose up -d $ComposeServiceName | Out-Null
+            Start-Sleep -Seconds 6
+        }
+
+        $attempt++
+    }
+}
+
 function Get-TenantIndexName {
     param([Parameter(Mandatory = $true)][string]$TenantId)
 
@@ -92,8 +119,8 @@ else {
 }
 
 Write-Host "Waiting for services..." -ForegroundColor Cyan
-$processingHealth = Wait-Http -Url "http://localhost:8082/health" -TimeoutSeconds $ServiceTimeoutSeconds
-$ingestionHealth = Wait-Http -Url "http://localhost:8081/health" -TimeoutSeconds $ServiceTimeoutSeconds
+$processingHealth = Wait-HttpWithServiceRecovery -Url "http://localhost:8082/health" -ComposeServiceName "log-processing-service" -TimeoutSeconds $ServiceTimeoutSeconds -RecoveryAttempts 1
+$ingestionHealth = Wait-HttpWithServiceRecovery -Url "http://localhost:8081/health" -ComposeServiceName "log-ingestion-service" -TimeoutSeconds $ServiceTimeoutSeconds -RecoveryAttempts 1
 
 Write-Host "Processing health:"
 $processingHealth | Format-List

@@ -56,6 +56,9 @@ class LogConsumerKafkaElasticsearchIT {
     @Autowired
     private ElasticsearchOperations elasticsearchOperations;
 
+    @Autowired
+    private IndexNameUtil indexNameUtil;
+
     @DynamicPropertySource
     static void registerProperties(DynamicPropertyRegistry registry) {
         registry.add("spring.kafka.bootstrap-servers", kafka::getBootstrapServers);
@@ -84,7 +87,7 @@ class LogConsumerKafkaElasticsearchIT {
 
         // Verify the document is stored in the tenant-001 specific index
         await().atMost(Duration.ofSeconds(15)).untilAsserted(() -> {
-            String tenantIndexName = IndexNameUtil.getTenantIndexName("tenant-001");
+            String tenantIndexName = indexNameUtil.getTenantIndexName("tenant-001");
             org.springframework.data.elasticsearch.core.mapping.IndexCoordinates indexCoordinates = 
                 org.springframework.data.elasticsearch.core.mapping.IndexCoordinates.of(tenantIndexName);
             

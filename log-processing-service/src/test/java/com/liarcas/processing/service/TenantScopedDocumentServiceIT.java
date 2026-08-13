@@ -42,6 +42,9 @@ class TenantScopedDocumentServiceIT {
     @Autowired
     private ElasticsearchOperations elasticsearchOperations;
 
+    @Autowired
+    private IndexNameUtil indexNameUtil;
+
     @DynamicPropertySource
     static void registerProperties(DynamicPropertyRegistry registry) {
         registry.add("spring.elasticsearch.uris", () -> "http://" + elasticsearch.getHttpHostAddress());
@@ -71,7 +74,7 @@ class TenantScopedDocumentServiceIT {
 
         // Verify the document is in the tenant-001 index
         await().atMost(Duration.ofSeconds(5)).untilAsserted(() -> {
-            String indexName = IndexNameUtil.getTenantIndexName("tenant-001");
+            String indexName = indexNameUtil.getTenantIndexName("tenant-001");
             org.springframework.data.elasticsearch.core.mapping.IndexCoordinates indexCoordinates = 
                 org.springframework.data.elasticsearch.core.mapping.IndexCoordinates.of(indexName);
             try {
@@ -113,7 +116,7 @@ class TenantScopedDocumentServiceIT {
 
         // Verify the document is in the tenant-002 index
         await().atMost(Duration.ofSeconds(5)).untilAsserted(() -> {
-            String indexName = IndexNameUtil.getTenantIndexName("tenant-002");
+            String indexName = indexNameUtil.getTenantIndexName("tenant-002");
             org.springframework.data.elasticsearch.core.mapping.IndexCoordinates indexCoordinates = 
                 org.springframework.data.elasticsearch.core.mapping.IndexCoordinates.of(indexName);
             try {
@@ -171,8 +174,8 @@ class TenantScopedDocumentServiceIT {
 
         // Verify tenant-001 document is in logs-tenant-001 and not in logs-tenant-002
         await().atMost(Duration.ofSeconds(5)).untilAsserted(() -> {
-            String index001 = IndexNameUtil.getTenantIndexName("tenant-001");
-            String index002 = IndexNameUtil.getTenantIndexName("tenant-002");
+            String index001 = indexNameUtil.getTenantIndexName("tenant-001");
+            String index002 = indexNameUtil.getTenantIndexName("tenant-002");
             org.springframework.data.elasticsearch.core.mapping.IndexCoordinates indexCoordinates001 = 
                 org.springframework.data.elasticsearch.core.mapping.IndexCoordinates.of(index001);
             org.springframework.data.elasticsearch.core.mapping.IndexCoordinates indexCoordinates002 = 

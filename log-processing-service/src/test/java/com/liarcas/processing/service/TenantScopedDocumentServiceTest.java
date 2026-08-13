@@ -23,6 +23,7 @@ import org.springframework.data.elasticsearch.core.mapping.IndexCoordinates;
 import org.springframework.data.elasticsearch.core.query.IndexQuery;
 
 import com.liarcas.processing.document.LogEventDocument;
+import com.liarcas.processing.index.IndexNameUtil;
 
 @ExtendWith(MockitoExtension.class)
 class TenantScopedDocumentServiceTest {
@@ -35,6 +36,9 @@ class TenantScopedDocumentServiceTest {
 
     @Mock
     private IndexOperations documentIndexOperations;
+
+    @Mock
+    private IndexNameUtil indexNameUtil;
 
     @InjectMocks
     private TenantScopedDocumentService tenantScopedDocumentService;
@@ -61,6 +65,7 @@ class TenantScopedDocumentServiceTest {
 
         when(elasticsearchOperations.indexOps(any(IndexCoordinates.class))).thenReturn(tenantIndexOperations);
         when(elasticsearchOperations.indexOps(LogEventDocument.class)).thenReturn(documentIndexOperations);
+        when(indexNameUtil.getTenantIndexName("tenant-001")).thenReturn("liarcas-logs-tenant-001");
         when(tenantIndexOperations.exists()).thenReturn(false);
         when(documentIndexOperations.createSettings()).thenReturn(settings);
         when(documentIndexOperations.createMapping()).thenReturn(mapping);
@@ -95,6 +100,7 @@ class TenantScopedDocumentServiceTest {
         );
 
         when(elasticsearchOperations.indexOps(any(IndexCoordinates.class))).thenReturn(tenantIndexOperations);
+        when(indexNameUtil.getTenantIndexName("tenant-002")).thenReturn("liarcas-logs-tenant-002");
         when(tenantIndexOperations.exists()).thenReturn(true);
 
         tenantScopedDocumentService.save(document);

@@ -2,38 +2,91 @@ package com.liarcas.processing.index;
 
 import java.util.regex.Pattern;
 
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
 /**
- * Utility for generating and sanitizing Elasticsearch index names.
+ * Generates tenant-scoped Elasticsearch index names from a configurable pattern.
  * 
- * Index names in Elasticsearch must follow specific rules:
+ * The pattern must include the placeholder {tenantId}. The tenant value is sanitized
+ * before substitution and the resolved index name is validated against Elasticsearch
+ * naming constraints.
+ *
+ * Index names in Elasticsearch must follow these rules:
  * - Must be lowercase
  * - Cannot contain spaces or special characters except . - _
- * - Cannot start with . or -
+ * - Cannot start with . or - or _
  * - Cannot contain :
- * 
- * This utility generates tenant-scoped index names like liarcas-logs-tenant-001
- * and sanitizes tenantId to ensure valid index names.
  */
+@Component
 public class IndexNameUtil {
 
-    // Avoid built-in Elastic data stream templates that match logs-*-*.
-    private static final String INDEX_PREFIX = "liarcas-logs";
+    private static final String TENANT_PLACEHOLDER = "{tenantId}";
+    private static final int MAX_INDEX_NAME_LENGTH = 255;
     private static final Pattern INVALID_CHARS = Pattern.compile("[^a-z0-9._-]");
     private static final Pattern LEADING_INVALID = Pattern.compile("^[._-]+");
+
+    private final String indexPattern;
+
+    public IndexNameUtil(@Value("${liarcas.elasticsearch.index-pattern:liarcas-logs-{tenantId}}") String indexPattern) {
+        this.indexPattern = indexPattern;
+        validatePattern(indexPattern);
+    }
 
     /**
      * Generate a tenant-scoped index name.
      * 
      * @param tenantId the tenant identifier
-    * @return a sanitized index name like liarcas-logs-tenant-001
+     * @return a sanitized index name like liarcas-logs-tenant-001
      */
-    public static String getTenantIndexName(String tenantId) {
+    public String getTenantIndexName(String tenantId) {
         if (tenantId == null || tenantId.isBlank()) {
             throw new IllegalArgumentException("tenantId cannot be null or blank");
         }
 
         String sanitizedTenantId = sanitizeIndexName(tenantId);
-        return INDEX_PREFIX + "-" + sanitizedTenantId;
+        String tenantIndexName = indexPattern.replace(TENANT_PLACEHOLDER, sanitizedTenantId);
+        validateResolvedIndexName(tenantIndexName);
+        return tenantIndexName;
+    }
+
+    private void validatePattern(String pattern) {
+        if (pattern == null || pattern.isBlank()) {
+            throw new IllegalStateException("liarcas.elasticsearch.index-pattern cannot be null or blank");
+        }
+
+        if (!pattern.contains(TENANT_PLACEHOLDER)) {
+            throw new IllegalStateException(
+                    "liarcas.elasticsearch.index-pattern must include " + TENANT_PLACEHOLDER
+            );
+        }
+
+        String resolvedExample = pattern.replace(TENANT_PLACEHOLDER, "tenant-validation");
+        validateResolvedIndexName(resolvedExample);
+    }
+
+    private void validateResolvedIndexName(String indexName) {
+        if (indexName == null || indexName.isBlank()) {
+            throw new IllegalStateException("Resolved Elasticsearch index name cannot be blank");
+        }
+
+        if (indexName.length() > MAX_INDEX_NAME_LENGTH) {
+            throw new IllegalStateException("Resolved Elasticsearch index name exceeds 255 characters");
+        }
+
+        if (LEADING_INVALID.matcher(indexName).find()) {
+            throw new IllegalStateException("Elasticsearch index name cannot start with '.', '_' or '-'");
+        }
+
+        if (indexName.indexOf(':') >= 0) {
+            throw new IllegalStateException("Elasticsearch index name cannot contain ':'");
+        }
+
+        if (INVALID_CHARS.matcher(indexName).find()) {
+            throw new IllegalStateException(
+                    "Elasticsearch index name contains invalid characters. Allowed: a-z, 0-9, '.', '-', '_'."
+            );
+        }
     }
 
     /**
@@ -48,7 +101,7 @@ public class IndexNameUtil {
      * @param input the string to sanitize
      * @return a sanitized index name component
      */
-    private static String sanitizeIndexName(String input) {
+    private String sanitizeIndexName(String input) {
         if (input == null || input.isBlank()) {
             throw new IllegalArgumentException("Input cannot be null or blank");
         }

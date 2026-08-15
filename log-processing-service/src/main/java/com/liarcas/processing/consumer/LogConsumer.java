@@ -1,11 +1,12 @@
 package com.liarcas.processing.consumer;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
 import com.liarcas.models.LogEvent;
 import com.liarcas.processing.document.LogEventDocument;
-import com.liarcas.processing.index.IndexNameUtil;
 import com.liarcas.processing.service.TenantScopedDocumentService;
 
 /**
@@ -13,6 +14,8 @@ import com.liarcas.processing.service.TenantScopedDocumentService;
  */
 @Component
 public class LogConsumer {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(LogConsumer.class);
 
     private final TenantScopedDocumentService tenantScopedDocumentService;
 
@@ -50,11 +53,6 @@ public class LogConsumer {
 
         tenantScopedDocumentService.save(document);
 
-        System.out.println(
-            "Consumed and saved log event: "
-                + document.getId()
-                + " to tenant index: "
-                + IndexNameUtil.getTenantIndexName(document.getTenantId())
-        );
+        LOGGER.info("Consumed and saved log event: {} for tenant: {}", document.getId(), document.getTenantId());
     }
 }

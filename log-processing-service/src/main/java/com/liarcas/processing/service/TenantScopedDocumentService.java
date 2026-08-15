@@ -22,9 +22,14 @@ import com.liarcas.processing.index.IndexNameUtil;
 public class TenantScopedDocumentService {
 
     private final ElasticsearchOperations elasticsearchOperations;
+    private final IndexNameUtil indexNameUtil;
 
-    public TenantScopedDocumentService(ElasticsearchOperations elasticsearchOperations) {
+    public TenantScopedDocumentService(
+            ElasticsearchOperations elasticsearchOperations,
+            IndexNameUtil indexNameUtil
+    ) {
         this.elasticsearchOperations = elasticsearchOperations;
+        this.indexNameUtil = indexNameUtil;
     }
 
     /**
@@ -45,7 +50,7 @@ public class TenantScopedDocumentService {
             throw new IllegalArgumentException("Document tenantId cannot be null or blank");
         }
 
-        String tenantIndexName = IndexNameUtil.getTenantIndexName(document.getTenantId());
+        String tenantIndexName = indexNameUtil.getTenantIndexName(document.getTenantId());
         IndexCoordinates indexCoordinates = IndexCoordinates.of(tenantIndexName);
         ensureTenantIndexExists(indexCoordinates);
         

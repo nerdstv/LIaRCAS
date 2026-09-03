@@ -1,6 +1,18 @@
 spring:
   application:
     name: root-cause-service
+  elasticsearch:
+    uris: ${ELASTICSEARCH_URIS:http://localhost:9200}
 
 server:
-  port: 8083
+  port: ${SERVER_PORT:8083}
+
+liarcas:
+  elasticsearch:
+    index-pattern: ${LIARCAS_ELASTICSEARCH_INDEX_PATTERN:liarcas-logs-{tenantId}}
+  auth:
+    header-name: ${LIARCAS_AUTH_HEADER_NAME:X-API-Key}
+    clients:
+      - client-id: ${LIARCAS_CLIENT_ID:local-dev-client}
+        api-key: ${LIARCAS_API_KEY:local-dev-api-key}
+        tenant-id: ${LIARCAS_TENANT_ID:tenant-001}

@@ -15,16 +15,40 @@
     <name>Root Cause Service</name>
     <description>Queries Elasticsearch and provides root cause analysis</description>
 
-    <!-- Runtime dependencies for API endpoints and shared domain models. -->
+    <!-- Runtime dependencies for API endpoints, auth, Elasticsearch querying, and shared domain models. -->
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-elasticsearch</artifactId>
+        </dependency>
+        <dependency>
             <groupId>com.liarcas</groupId>
             <artifactId>common-models</artifactId>
             <version>${project.version}</version>
+        </dependency>
+        <!-- Testcontainers dependencies support integration testing with a real Elasticsearch container. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-testcontainers</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>elasticsearch</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 

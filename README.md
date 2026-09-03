@@ -30,7 +30,8 @@ Implemented today:
 - API-key based authentication on the ingestion endpoint
 - Tenant resolution from API key
 - Kafka-based decoupling between ingestion and processing
-- Log processing service that persists events to Elasticsearch
+- Log processing service that persists events to Elasticsearch, tenant-scoped by index
+- Root cause service exposing a tenant-scoped, read-only `GET /logs` query API
 - Docker Compose setup for local bring-up
 - End-to-end smoke test script with Docker
 - Unit and integration tests run in CI
@@ -38,7 +39,6 @@ Implemented today:
 Planned next:
 
 - Request validation hardening
-- Tenant-scoped storage and query APIs
 - Actuator and metrics
 - Environment profiles and stronger production configuration
 - Error handling and resilience improvements
@@ -72,7 +72,8 @@ Elasticsearch
 				|
 				v
 root-cause-service
-	- currently scaffolded only
+	- REST API: tenant-scoped GET /logs query endpoint
+	- API key authentication (same model as ingestion)
 	- planned RCA API layer
 	- planned LangGraph integration
 ```
@@ -120,23 +121,18 @@ Responsibilities:
 
 - Consumes messages from Kafka topic `raw-logs`
 - Maps incoming `LogEvent` objects into Elasticsearch documents
-- Persists them to Elasticsearch
-
-Current note:
-
-- Logs are currently stored in a shared `logs` index
-- Tenant-scoped indices are planned as the next hardening step
+- Persists them to a tenant-scoped index (`liarcas-logs-{tenantId}` by default)
 
 ### root-cause-service
 
 Responsibilities today:
 
-- Minimal Spring Boot service scaffold
-- Health endpoint only
+- Exposes `GET /logs`: a tenant-scoped, paginated, filterable read API over stored logs
+- Requires the same API key header as ingestion; the tenant is always resolved from the authenticated caller, never from request input
+- Health endpoint
 
 Planned responsibilities:
 
-- Query stored logs from Elasticsearch
 - Run RCA workflows
 - Expose RCA APIs such as analysis trigger and report retrieval
 - Integrate with a LangGraph-based AI agent workflow
@@ -164,16 +160,19 @@ Planned for RCA:
 
 ## Authentication Model
 
-The ingestion endpoint is protected with an API key.
+Both the ingestion endpoint and the log query endpoint are protected with an API key.
 
 Current behavior:
 
 - Client sends `X-API-Key`
 - LIaRCAS matches the key against configured clients
 - A tenant is resolved from that client configuration
-- The server overwrites any tenantId sent by the caller
+- On ingestion, the server overwrites any tenantId sent by the caller
+- On query, the tenant used to select which logs are visible always comes from the
+  resolved API key - there is no request parameter that can select a different tenant
 
-This ensures the caller cannot submit logs on behalf of another tenant simply by changing the request body.
+This ensures the caller cannot submit logs on behalf of another tenant, or read another
+tenant's logs, simply by changing the request.
 
 Example auth configuration:
 
@@ -186,6 +185,88 @@ liarcas:
 				api-key: local-dev-api-key
 				tenant-id: tenant-001
 ```
+
+## Log Query API
+
+`root-cause-service` exposes a read-only, tenant-scoped API for querying stored logs.
+
+### `GET /logs`
+
+Requires the `X-API-Key` header. Tenant scope is always derived from the authenticated
+API key; it cannot be overridden or supplied by the caller.
+
+Query parameters (all optional):
+
+| Parameter     | Type                | Description                                        |
+|---------------|---------------------|----------------------------------------------------|
+| `serviceName` | string              | Exact match on the originating service name        |
+| `level`       | string              | Exact match on log level (TRACE, DEBUG, INFO, WARN, ERROR, FATAL) |
+| `from`        | ISO-8601 timestamp  | Inclusive lower bound on `timestamp`                |
+| `to`          | ISO-8601 timestamp  | Inclusive upper bound on `timestamp`                |
+| `page`        | integer, default 0  | Zero-based page index                               |
+| `size`        | integer, default 20 | Page size, 1-200                                    |
+
+Results are sorted by `timestamp` descending.
+
+Example request:
+
+```bash
+curl -G http://localhost:8083/logs \
+	-H "X-API-Key: local-dev-api-key" \
+	--data-urlencode "serviceName=payment-service" \
+	--data-urlencode "level=ERROR" \
+	--data-urlencode "from=2026-01-01T00:00:00Z" \
+	--data-urlencode "to=2026-01-02T00:00:00Z" \
+	--data-urlencode "page=0" \
+	--data-urlencode "size=20"
+```
+
+Example response (`200 OK`):
+
+```json
+{
+	"content": [
+		{
+			"id": "log-abc-123",
+			"serviceName": "payment-service",
+			"component": "db-client",
+			"environment": "prod",
+			"serviceVersion": "1.4.2",
+			"instanceId": "payment-pod-7",
+			"traceId": "trace-abc-123",
+			"level": "ERROR",
+			"message": "Database timeout",
+			"exceptionType": "SQLTransientConnectionException",
+			"stackTraceHash": "sth-9f8c2d",
+			"timestamp": "2026-01-01T12:34:56Z"
+		}
+	],
+	"page": 0,
+	"size": 20,
+	"totalElements": 1,
+	"totalPages": 1
+}
+```
+
+Example error response for an invalid filter (`400 Bad Request`):
+
+```json
+{
+	"type": "urn:liarcas:problem:invalid-query",
+	"title": "Invalid log query",
+	"status": 400,
+	"detail": "level must be one of [TRACE, DEBUG, INFO, WARN, ERROR, FATAL]",
+	"instance": "/logs"
+}
+```
+
+Example response for a missing or invalid API key (`401 Unauthorized`): an empty body
+with status 401.
+
+Tenant isolation: because the tenant used to select the underlying Elasticsearch index
+always comes from the authenticated API key, a caller authenticated for `tenant-001`
+cannot retrieve `tenant-002`'s records - supplying a `tenantId` query parameter has no
+effect, since the endpoint never binds one.
 
 ## Log Event Shape
 
@@ -318,6 +399,7 @@ Current containers included in Compose:
 - Kafka topic initialization helper
 - log-ingestion-service
 - log-processing-service
+- root-cause-service
 
 ## Local Endpoints
 
@@ -326,17 +408,10 @@ When the Docker Compose stack is running locally:
 - Ingestion API: `http://localhost:8081/logs`
 - Ingestion health: `http://localhost:8081/health`
 - Processing health: `http://localhost:8082/health`
+- Log query API: `http://localhost:8083/logs`
+- Root cause service health: `http://localhost:8083/health`
 - Elasticsearch: `http://localhost:9200`
 - Kafka external listener: `localhost:9092`
-
-Note:
-
-- The root-cause service is not currently part of the Docker Compose stack
-- The current compose setup focuses on the ingestion and processing path
-
-If you start the root-cause service separately, its default health endpoint is:
-
-- Root cause service health: `http://localhost:8083/health`
 
 ## Example API Call
 
@@ -391,9 +466,8 @@ Current CI behavior:
 These are known and expected at the current stage of the project:
 
 - no dashboard UI yet
-- root-cause-service is scaffolded but not functionally implemented
+- root-cause-service exposes a log query API, but RCA workflows are not implemented yet
 - request validation still needs hardening
-- logs are stored in a shared Elasticsearch index
 - local Docker setup is development-oriented, not production-secure
 - health endpoints are custom and will later move to actuator-based health checks
 

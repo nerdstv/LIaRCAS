@@ -76,3 +76,19 @@ services:
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       ELASTICSEARCH_URIS: http://elasticsearch:9200
+
+  # Tenant-scoped, read-only REST API for querying stored logs.
+  root-cause-service:
+    build:
+      context: .
+      dockerfile: root-cause-service/Dockerfile
+    depends_on:
+      - elasticsearch
+    ports:
+      - "8083:8083"
+    environment:
+      ELASTICSEARCH_URIS: http://elasticsearch:9200
+      LIARCAS_AUTH_HEADER_NAME: X-API-Key
+      LIARCAS_CLIENT_ID: local-dev-client
+      LIARCAS_API_KEY: local-dev-api-key
+      LIARCAS_TENANT_ID: tenant-001

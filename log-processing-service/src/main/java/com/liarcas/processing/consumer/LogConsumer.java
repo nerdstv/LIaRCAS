@@ -35,6 +35,22 @@ public class LogConsumer {
      */
     @KafkaListener(topics = "raw-logs")
     public void consume(LogEvent message) {
+        if (message == null) {
+            LOGGER.warn("Rejected log event before persistence: reason=null_message topic=raw-logs");
+            return;
+        }
+
+        if (message.getTenantId() == null || message.getTenantId().isBlank()) {
+            LOGGER.warn(
+                    "Rejected log event before persistence: reason=missing_tenant_id topic=raw-logs eventId={} serviceName={} traceId={} tenantId={}",
+                    message.getId(),
+                    message.getServiceName(),
+                    message.getTraceId(),
+                    message.getTenantId()
+            );
+            return;
+        }
+
         LogEventDocument document = new LogEventDocument(
                 message.getId(),
                 message.getTenantId(),

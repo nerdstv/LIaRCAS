@@ -20,7 +20,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
+import org.springframework.data.elasticsearch.NoSuchIndexException;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
+import org.springframework.data.elasticsearch.core.mapping.IndexCoordinates;
 import org.springframework.kafka.config.TopicBuilder;
 import org.springframework.kafka.support.serializer.JsonSerializer;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -121,6 +123,45 @@ class LogConsumerKafkaElasticsearchIT {
             assertThat(saved.getStackTraceHash()).isEqualTo("sth-9f8c2d");
             assertThat(saved.getTimestamp()).isEqualTo(Instant.parse("2026-04-21T10:15:30Z"));
         });
+    }
+
+    @Test
+    void shouldSkipKafkaMessageWithBlankTenantId() throws Exception {
+        LogEvent event = new LogEvent(
+                "log-invalid-tenant",
+                "payment-service",
+                "ERROR",
+                "Database timeout",
+                Instant.parse("2026-04-21T10:15:31Z")
+        );
+        event.setTenantId("   ");
+        event.setComponent("db-client");
+        event.setEnvironment("prod");
+        event.setServiceVersion("1.4.2");
+        event.setInstanceId("payment-pod-7");
+        event.setTraceId("trace-invalid-123");
+        event.setExceptionType("SQLTransientConnectionException");
+        event.setStackTraceHash("sth-invalid");
+
+        send(event);
+
+        // Ensure the invalid message is never indexed in any tenant index.
+        await().during(Duration.ofSeconds(3)).atMost(Duration.ofSeconds(8)).untilAsserted(() -> {
+            LogEventDocument saved = findByIdAcrossTenantIndices("log-invalid-tenant");
+            assertThat(saved).isNull();
+        });
+    }
+
+    private LogEventDocument findByIdAcrossTenantIndices(String id) {
+        try {
+            return elasticsearchOperations.get(
+                    id,
+                    LogEventDocument.class,
+                    IndexCoordinates.of("liarcas-logs-*")
+            );
+        } catch (NoSuchIndexException e) {
+            return null;
+        }
     }
 
     private void send(LogEvent event) throws Exception {

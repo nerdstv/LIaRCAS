@@ -2,6 +2,7 @@ package com.liarcas.processing.consumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import java.time.Instant;
 
@@ -11,12 +12,14 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 
 import com.liarcas.models.LogEvent;
 import com.liarcas.processing.document.LogEventDocument;
 import com.liarcas.processing.service.TenantScopedDocumentService;
 
-@ExtendWith(MockitoExtension.class)
+@ExtendWith({MockitoExtension.class, OutputCaptureExtension.class})
 class LogConsumerTest {
 
     @Mock
@@ -63,5 +66,24 @@ class LogConsumerTest {
         assertThat(savedDocument.getExceptionType()).isEqualTo("SQLTransientConnectionException");
         assertThat(savedDocument.getStackTraceHash()).isEqualTo("sth-9f8c2d");
         assertThat(savedDocument.getTimestamp()).isEqualTo(timestamp);
+    }
+
+    @Test
+    void shouldRejectAndLogWhenTenantIdIsMissing(CapturedOutput output) {
+        LogEvent message = new LogEvent(
+                "log-no-tenant",
+                "payment-service",
+                "ERROR",
+                "Database timeout",
+                Instant.parse("2026-04-21T10:15:30Z")
+        );
+
+        logConsumer.consume(message);
+
+        verifyNoInteractions(tenantScopedDocumentService);
+        assertThat(output.getOut())
+                .contains("reason=missing_tenant_id")
+                .contains("eventId=log-no-tenant")
+                .contains("topic=raw-logs");
     }
 }
